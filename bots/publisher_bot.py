@@ -72,6 +72,23 @@ def get_google_credentials() -> Credentials:
             creds.refresh(Request())
             with open(TOKEN_PATH, 'w') as f:
                 f.write(creds.to_json())
+        else:
+            # GitHub Actions 환경: 환경변수에서 직접 인증
+            client_id = os.getenv('GOOGLE_CLIENT_ID', '')
+            client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '')
+            refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN', '')
+            if client_id and client_secret and refresh_token:
+                creds = Credentials(
+                    token=None,
+                    refresh_token=refresh_token,
+                    token_uri='https://oauth2.googleapis.com/token',
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    scopes=SCOPES,
+                )
+                creds.refresh(Request())
+            else:
+                raise RuntimeError("Google 인증 실패. scripts/get_token.py 를 먼저 실행하세요.")
     if not creds or not creds.valid:
         raise RuntimeError("Google 인증 실패. scripts/get_token.py 를 먼저 실행하세요.")
     return creds
