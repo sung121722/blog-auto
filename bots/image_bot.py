@@ -17,6 +17,7 @@ IMAGE_MODE 환경변수로 모드 선택:
 import json
 import logging
 import os
+import random
 import re
 import uuid
 from datetime import datetime
@@ -49,7 +50,9 @@ logger = logging.getLogger(__name__)
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
-IMAGE_MODE = os.getenv('IMAGE_MODE', 'manual').lower()  # manual | request | auto
+UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY', '')
+PEXELS_API_KEY = os.getenv('PEXELS_API_KEY', '')
+IMAGE_MODE = os.getenv('IMAGE_MODE', 'pexels').lower()  # manual | request | auto | unsplash | pexels
 
 
 # ─── Telegram 전송 ────────────────────────────────────
@@ -301,6 +304,206 @@ def generate_image_auto(prompt: str, topic: str) -> str | None:
         return None
 
 
+# ─── unsplash 모드 ───────────────────────────────────
+
+UNSPLASH_KEYWORD_MAP = [
+    (['school', 'classroom', 'chalk', 'desk', 'teacher', 'elementary'], 'vintage american school classroom'),
+    (['school bus', 'bus'], 'school bus children america'),
+    (['cartoon', 'saturday', 'television'], 'vintage family television living room'),
+    (['cafeteria', 'lunch'], 'school lunch children cafeteria'),
+    (['drive-in', 'movie', 'theater', 'cinema', 'film'], 'drive-in movie theater vintage america'),
+    (['car', 'driver', 'license', 'road', 'freedom'], 'classic american car vintage road'),
+    (['prom', 'dance', 'high school'], 'vintage high school prom dance america'),
+    (['note', 'letter', 'handwritten', 'pen'], 'handwritten letter vintage nostalgia'),
+    (['outside', 'play', 'neighborhood', 'kids', 'street'], 'children playing outside neighborhood vintage'),
+    (['drugstore', 'soda', 'milkshake', 'diner', 'counter'], 'american diner soda fountain vintage'),
+    (['pool', 'swimming', 'summer'], 'summer swimming pool children vintage'),
+    (['halloween', 'trick-or-treat'], 'halloween trick or treat children vintage'),
+    (['beatles', 'concert', 'music', 'vinyl', 'record'], 'vinyl record player music vintage'),
+    (['moon', 'apollo', 'space', 'nasa'], 'moon landing space retro vintage'),
+    (['burger', 'milkshake', 'carhop', 'fast food'], 'vintage american burger diner milkshake'),
+    (['sunday', 'dinner', 'pot roast', 'mom', 'mother', 'cooking', 'kitchen'], 'family dinner kitchen cooking vintage'),
+    (['ice cream', 'ice cream truck', 'popsicle'], 'ice cream children summer street'),
+    (['diner', 'jukebox', 'booth'], 'american diner jukebox vintage 1950s'),
+    (['christmas', 'presents', 'holiday', 'gifts'], 'christmas family vintage living room'),
+    (['fourth of july', 'fireworks', 'sparkler', 'july 4'], 'fourth of july fireworks vintage america'),
+    (['road trip', 'station wagon', 'vacation'], 'family road trip station wagon vintage'),
+    (['snow', 'sledding', 'winter'], 'children sledding snow winter vintage'),
+    (['baseball', 'sport', 'game'], 'vintage american baseball game'),
+    (['neighborhood', 'suburb', 'house', 'backyard'], 'american suburban neighborhood vintage house'),
+    (['bully', 'kids', 'playing', 'outside'], 'children playing outside summer vintage'),
+    (['thanksgiving', 'family', 'table', 'grandma'], 'thanksgiving family dinner table vintage'),
+    (['mall', 'shopping', '1980s', 'arcade'], 'shopping mall 1980s america vintage'),
+    (['bicycle', 'bike', 'riding'], 'child riding bicycle summer vintage'),
+    (['candy', 'store', 'corner'], 'vintage candy store children america'),
+    (['barbecue', 'backyard', 'grill'], 'backyard barbecue family summer vintage'),
+]
+
+def fetch_unsplash_image(topic: str) -> str | None:
+    if not UNSPLASH_ACCESS_KEY:
+        logger.error("UNSPLASH_ACCESS_KEY 없음")
+        return None
+    # 주제 키워드 매핑 — 많이 겹치는 항목 우선
+    query = 'vintage american nostalgia family'
+    best_match = 0
+    topic_words = set(re.findall(r"[a-z']+", topic.lower()))
+    for keywords, q in UNSPLASH_KEYWORD_MAP:
+        matches = sum(1 for kw in keywords if kw.lower() in topic_words)
+        if matches > best_match:
+            best_match = matches
+            query = q
+    try:
+        resp = requests.get(
+            'https://api.unsplash.com/photos/random',
+            params={'query': query, 'orientation': 'landscape'},
+            headers={'Authorization': f'Client-ID {UNSPLASH_ACCESS_KEY}'},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        img_url = data['urls']['regular']
+        img_bytes = requests.get(img_url, timeout=30).content
+        safe_name = re.sub(r'[^\w가-힣-]', '_', topic)[:50]
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_name}.jpg"
+        save_path = IMAGES_DIR / filename
+        save_path.write_bytes(img_bytes)
+        logger.info(f"Unsplash 이미지 저장: {save_path} (검색어: {query})")
+        return str(save_path)
+    except Exception as e:
+        logger.error(f"Unsplash 이미지 다운로드 실패: {e}")
+        return None
+
+
+# ─── pexels 모드 ─────────────────────────────────────
+
+PEXELS_KEYWORD_MAP = [
+    (['school', 'classroom', 'chalk', 'desk', 'teacher', 'elementary'], 'vintage american school classroom 1960s children'),
+    (['school bus', 'bus', 'yellow bus'], 'vintage yellow school bus america children'),
+    (['cartoon', 'saturday', 'TV', 'television'], 'vintage family watching television 1960s living room'),
+    (['cafeteria', 'lunch', 'pizza', 'food'], 'vintage american school lunch cafeteria children'),
+    (['drive-in', 'movie', 'theater', 'cinema', 'film'], 'vintage american drive-in movie theater 1950s 1960s'),
+    (['car', 'driver', 'license', 'freedom', 'road'], 'vintage american classic car 1960s 1970s road'),
+    (['prom', 'dance', 'high school', 'formal'], 'vintage american high school prom 1960s 1970s dance'),
+    (['note', 'letter', 'handwritten', 'pen', 'paper'], 'vintage handwritten letter paper pen nostalgia'),
+    (['outside', 'play', 'neighborhood', 'kids', 'street', 'streetlight'], 'vintage american children playing outside neighborhood 1960s'),
+    (['drugstore', 'soda fountain', 'milkshake', 'diner', 'counter'], 'vintage american soda fountain diner 1950s milkshake'),
+    (['pool', 'swimming', 'summer', 'water'], 'vintage american public swimming pool summer children'),
+    (['halloween', 'trick-or-treat', 'costume'], 'vintage halloween trick or treat children neighborhood'),
+    (['beatles', 'ed sullivan', 'concert', 'show', 'television'], 'vintage american television show 1960s family watching'),
+    (['vinyl', 'record', 'music', 'cassette', 'tape', 'eight-track'], 'vintage vinyl record player music 1960s 1970s'),
+    (['moon landing', 'apollo', 'space', 'nasa'], 'vintage television moon landing family watching 1969'),
+    (['burger', 'milkshake', 'carhop', 'drive-in restaurant', 'fast food'], 'vintage american drive-in restaurant carhop burger 1950s'),
+    (['sunday', 'dinner', 'pot roast', 'mom', 'mother', 'cooking', 'kitchen'], 'vintage american family sunday dinner kitchen mother cooking'),
+    (['ice cream', 'ice cream truck', 'popsicle', 'summer'], 'vintage american ice cream truck children summer street'),
+    (['diner', 'jukebox', 'booth', 'blue plate', 'restaurant'], 'vintage american diner jukebox 1950s 1960s'),
+    (['christmas', 'presents', 'tree', 'holiday', 'gifts'], 'vintage american christmas family presents living room 1960s'),
+    (['fourth of july', 'fireworks', 'sparkler', 'july 4', 'independence day'], 'vintage american fourth of july fireworks family picnic'),
+    (['road trip', 'station wagon', 'vacation', 'family trip'], 'vintage american family road trip station wagon 1960s 1970s'),
+    (['snow', 'sledding', 'snowday', 'winter', 'sled'], 'vintage american children sledding snow winter 1960s'),
+    (['baseball', 'sport', 'game', 'stadium'], 'vintage american baseball game stadium 1950s 1960s'),
+    (['neighborhood', 'suburb', 'house', 'backyard', 'picket fence'], 'vintage american suburban neighborhood house 1950s 1960s'),
+]
+
+def _get_query_for_topic(topic: str) -> str:
+    """PEXELS_KEYWORD_MAP에서 topic에 가장 잘 맞는 검색어 반환"""
+    query = 'vintage american nostalgia 1960s family neighborhood'
+    best_match = 0
+    topic_words = set(re.findall(r"[a-z']+", topic.lower()))
+    for keywords, q in PEXELS_KEYWORD_MAP:
+        matches = sum(1 for kw in keywords if kw.lower() in topic_words)
+        if matches > best_match:
+            best_match = matches
+            query = q
+    return query
+
+
+def fetch_openverse_image(topic: str) -> str | None:
+    """
+    Openverse API (Flickr Commons + Wikimedia) — 실제 빈티지 미국 사진.
+    무료, API 키 불필요.
+    """
+    query = _get_query_for_topic(topic)
+    try:
+        # 상업용 가능 라이선스만: CC0(퍼블릭도메인), CC BY, CC BY-SA
+        # CC BY-NC / CC BY-ND / CC BY-NC-ND 는 수익 블로그에 사용 불가
+        short_query = ' '.join(query.split()[:5])
+        resp = requests.get(
+            'https://api.openverse.org/v1/images/',
+            params={
+                'q': short_query,
+                'license': 'cc0,pdm,by,by-sa',
+                'source': 'flickr,wikimedia',
+                'page_size': 20,
+                'mature': 'false',
+            },
+            headers={'User-Agent': 'BlogWriter/1.0 (nostalgia blog automation)'},
+            timeout=20,
+        )
+        resp.raise_for_status()
+        results = resp.json().get('results', [])
+        if not results:
+            logger.warning(f"Openverse 검색 결과 없음: {query} — Pexels로 대체")
+            return fetch_pexels_image(topic)
+        item = random.choice(results[:10])
+        img_url = item.get('url', '')
+        if not img_url:
+            return fetch_pexels_image(topic)
+        img_bytes = requests.get(img_url, timeout=30).content
+        safe_name = re.sub(r'[^\w-]', '_', topic)[:50]
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_name}.jpg"
+        save_path = IMAGES_DIR / filename
+        save_path.write_bytes(img_bytes)
+
+        # 출처 정보 저장 (블로그 본문에 삽입하기 위해)
+        attribution = {
+            'creator': item.get('creator', ''),
+            'creator_url': item.get('creator_url', ''),
+            'license': item.get('license', ''),
+            'license_url': item.get('license_url', ''),
+            'source': item.get('foreign_landing_url', ''),
+            'title': item.get('title', ''),
+        }
+        attr_path = save_path.with_suffix('.attribution.json')
+        attr_path.write_text(json.dumps(attribution, ensure_ascii=False), encoding='utf-8')
+
+        logger.info(f"Openverse 이미지 저장: {save_path} (검색어: {query}, 라이선스: {attribution['license']})")
+        return str(save_path)
+    except Exception as e:
+        logger.error(f"Openverse 이미지 다운로드 실패: {e} — Pexels로 대체")
+        return fetch_pexels_image(topic)
+
+
+def fetch_pexels_image(topic: str) -> str | None:
+    if not PEXELS_API_KEY:
+        logger.error("PEXELS_API_KEY 없음")
+        return None
+    query = _get_query_for_topic(topic)
+    try:
+        resp = requests.get(
+            'https://api.pexels.com/v1/search',
+            params={'query': query, 'per_page': 15, 'orientation': 'landscape'},
+            headers={'Authorization': PEXELS_API_KEY},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        photos = resp.json().get('photos', [])
+        if not photos:
+            logger.warning(f"Pexels 검색 결과 없음: {query}")
+            return None
+        photo = random.choice(photos[:10])
+        img_url = photo['src']['large']
+        img_bytes = requests.get(img_url, timeout=30).content
+        safe_name = re.sub(r'[^\w-]', '_', topic)[:50]
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_name}.jpg"
+        save_path = IMAGES_DIR / filename
+        save_path.write_bytes(img_bytes)
+        logger.info(f"Pexels 이미지 저장: {save_path} (검색어: {query})")
+        return str(save_path)
+    except Exception as e:
+        logger.error(f"Pexels 이미지 다운로드 실패: {e}")
+        return None
+
+
 # ─── manual 모드 ──────────────────────────────────────
 
 def process_manual_mode(topic: str, description: str = '') -> str:
@@ -333,7 +536,13 @@ def process(article: dict) -> str | None:
     description = article.get('meta', '')
     logger.info(f"이미지봇 실행: {topic} (모드: {IMAGE_MODE})")
 
-    if IMAGE_MODE == 'auto':
+    if IMAGE_MODE == 'pexels':
+        return fetch_pexels_image(topic)
+
+    elif IMAGE_MODE == 'unsplash':
+        return fetch_unsplash_image(topic)
+
+    elif IMAGE_MODE == 'auto':
         prompt = build_cartoon_prompt(topic, description)
         image_path = generate_image_auto(prompt, topic)
         if image_path:

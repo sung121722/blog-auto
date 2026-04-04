@@ -56,53 +56,57 @@ def _build_prompt(topic_data: dict, style_prefix: str = "") -> tuple[str, str]:
     published_at = topic_data.get('published_at', '')
 
     system = (
-        "당신은 The 4th Path 블로그 엔진의 전문 에디터다. "
-        "반드시 아래 섹션 헤더 형식만 사용해 완성된 Blogger-ready HTML 원고를 출력하라. "
-        "본문(BODY)은 HTML로 작성하고, KEY_POINTS는 3줄 이내로 작성한다."
+        "You are a professional senior nostalgia blog writer. "
+        "Your audience is American Baby Boomers and Gen X readers (ages 50–80). "
+        "Write warm, engaging, conversational English. "
+        "Always proofread for spelling and grammar before outputting. "
+        "Output ONLY the section headers below with their content — no extra commentary. "
+        "BODY must be Blogger-ready HTML with proper <h2>, <p>, <strong> tags."
     )
     if style_prefix:
         system = style_prefix + system
-    prompt = f"""다음 글감을 바탕으로 한국어 블로그 원고를 작성해줘.
+    prompt = f"""Write an English nostalgia blog article based on the topic below.
 
-주제: {topic}
-코너: {corner}
-설명: {description}
-출처: {source}
-발행시점 참고: {published_at}
+Topic: {topic}
+Corner: {corner}
+Description: {description}
+Reference: {published_at}
 
-출력 형식은 아래 섹션만 정확히 사용해.
+Use EXACTLY these section headers and no others:
 
 ---TITLE---
-제목
+Article title in English (compelling, nostalgic)
 
 ---META---
-검색 설명 150자 이내
+SEO meta description in English, under 155 characters
 
 ---SLUG---
-영문 소문자 slug
+lowercase-english-slug
 
 ---TAGS---
-태그1, 태그2, 태그3
+tag1, tag2, tag3, tag4, tag5
 
 ---CORNER---
 {corner}
 
 ---BODY---
-<h2>...</h2> 형식의 Blogger-ready HTML 본문
+Blogger-ready HTML body. Use <h2> for section headings, <p> for paragraphs.
+Write at least 800 words. Warm, conversational tone. Include 1–2 reader questions.
+Spell-check all words before output.
 
 ---KEY_POINTS---
-- 핵심포인트1
-- 핵심포인트2
-- 핵심포인트3
+- Key point 1
+- Key point 2
+- Key point 3
 
----COUPANG_KEYWORDS---
-키워드1, 키워드2
+---AMAZON_KEYWORDS---
+keyword1, keyword2
 
 ---SOURCES---
-{source} | 참고 출처 | {published_at}
+{source} | {published_at}
 
 ---DISCLAIMER---
-필요 시 짧은 면책문구
+(optional short disclaimer if needed, else leave blank)
 """
     return system, prompt
 

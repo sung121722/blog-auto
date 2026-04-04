@@ -2,7 +2,7 @@
   "_comment": "The 4th Path 블로그 자동 수익 엔진 — 엔진 설정 (v3)",
   "_updated": "2026-03-29",
   "writing": {
-    "provider": "claude_code",
+    "provider": "gemini",
     "_comment_provider": "claude_code=Claude Code CLI(구독), openclaw=ChatGPT Pro(OAuth), claude_web=Claude Max(웹쿠키), gemini_web=Gemini Pro(웹쿠키), claude=Anthropic API키, gemini=Google AI API키",
     "options": {
       "claude_code": {
@@ -30,7 +30,7 @@
       },
       "gemini": {
         "api_key_env": "GEMINI_API_KEY",
-        "model": "gemini-2.5-pro",
+        "model": "gemini-2.5-flash",
         "max_tokens": 4096,
         "temperature": 0.7
       }

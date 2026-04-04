@@ -1,0 +1,38 @@
+name: Auto Publish Blog
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-6'  # 매일 오후 8시 KST (UTC+9 기준 11:00 UTC), 월~토
+  workflow_dispatch:          # 수동 실행 버튼
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN=${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          BLOG_MAIN_ID=${{ secrets.BLOG_MAIN_ID }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          UNSPLASH_ACCESS_KEY=${{ secrets.UNSPLASH_ACCESS_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          EOF
+
+      - name: Run auto publish
+        run: python auto_publish.py
