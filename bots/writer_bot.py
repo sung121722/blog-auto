@@ -50,7 +50,7 @@ def _safe_slug(text: str) -> str:
 
 def _build_prompt(topic_data: dict, style_prefix: str = "") -> tuple[str, str]:
     topic = topic_data.get('topic', '').strip()
-    corner = topic_data.get('corner', '쉬운세상').strip() or '쉬운세상'
+    corner = topic_data.get('corner', 'Nostalgia').strip() or 'Nostalgia'
     description = topic_data.get('description', '').strip()
     source = topic_data.get('source_url') or topic_data.get('source') or ''
     published_at = topic_data.get('published_at', '')
@@ -91,7 +91,7 @@ English tags only, no Korean. Example: nostalgia, baby boomer, 1960s, childhood,
 
 ---BODY---
 Blogger-ready HTML body. Use <h2> for section headings, <p> for paragraphs.
-Write at least 800 words. Warm, conversational tone. Include 1–2 reader questions throughout.
+IMPORTANT: Write MINIMUM 800 words — do not stop early. Warm, conversational tone. Include 1–2 reader questions. Use at least 4 paragraphs per section.
 Spell-check all words before output.
 
 ---KEY_POINTS---
@@ -149,7 +149,7 @@ def write_article(topic_data: dict, output_path: Path, writer=None, style_prefix
 
     article.setdefault('title', title)
     article['slug'] = article.get('slug') or _safe_slug(article['title'])
-    article['corner'] = article.get('corner') or topic_data.get('corner', '쉬운세상')
+    article['corner'] = article.get('corner') or topic_data.get('corner', 'Nostalgia')
     article['topic'] = topic_data.get('topic', '')
     article['description'] = topic_data.get('description', '')
     article['quality_score'] = topic_data.get('quality_score', 0)
@@ -204,7 +204,7 @@ def run_pending(limit: int = 3) -> list[dict]:
     return results
 
 
-def run_from_topic(topic: str, corner: str = '쉬운세상', style_prefix: str = "") -> dict:
+def run_from_topic(topic: str, corner: str = 'Nostalgia', style_prefix: str = "") -> dict:
     """
     직접 주제 문자열로 글 작성.
     Returns: article dict
@@ -244,7 +244,7 @@ def run_from_file(file_path: str, style_prefix: str = "") -> dict:
 def main():
     parser = argparse.ArgumentParser(description='The 4th Path 글쓰기 봇')
     parser.add_argument('--topic', type=str, help='직접 글감 지정')
-    parser.add_argument('--corner', type=str, default='쉬운세상', help='코너 지정 (기본: 쉬운세상)')
+    parser.add_argument('--corner', type=str, default='Nostalgia', help='코너 지정 (기본: Nostalgia)')
     parser.add_argument('--file', type=str, help='글감 JSON 파일 경로')
     parser.add_argument('--limit', type=int, default=3, help='최대 처리 글 수 (기본: 3)')
     args = parser.parse_args()
