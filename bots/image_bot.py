@@ -34,8 +34,8 @@ IMAGES_DIR = DATA_DIR / 'images'
 LOG_DIR = BASE_DIR / 'logs'
 PENDING_PROMPTS_FILE = IMAGES_DIR / 'pending_prompts.json'
 
-LOG_DIR.mkdir(exist_ok=True)
-IMAGES_DIR.mkdir(exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
