@@ -84,14 +84,14 @@ SEO meta description in English, under 155 characters
 lowercase-english-slug
 
 ---TAGS---
-tag1, tag2, tag3, tag4, tag5
+English tags only, no Korean. Example: nostalgia, baby boomer, 1960s, childhood, memories
 
 ---CORNER---
 {corner}
 
 ---BODY---
 Blogger-ready HTML body. Use <h2> for section headings, <p> for paragraphs.
-Write at least 800 words. Warm, conversational tone. Include 1–2 reader questions.
+Write at least 1,200 words. Warm, conversational tone. Include 2–3 reader questions throughout.
 Spell-check all words before output.
 
 ---KEY_POINTS---

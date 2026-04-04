@@ -69,8 +69,10 @@ def insert_image_to_body(body: str, image_path: str) -> str:
         )
         if '</p>' in body:
             idx = body.index('</p>') + 4
-            return body[:idx] + '\n' + img_tag + '\n' + body[idx:]
-        return img_tag + '\n' + body
+            body = body[:idx] + '\n' + img_tag + '\n' + body[idx:]
+        else:
+            body = img_tag + '\n' + body
+        return f'<div style="font-size:22px;line-height:1.8;">{body}</div>'
     except Exception as e:
         logger.warning(f"이미지 삽입 실패: {e}")
         return body
