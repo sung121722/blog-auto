@@ -174,20 +174,21 @@ class GeminiWriter(BaseWriter):
             logger.warning("GEMINI_API_KEY 없음 — GeminiWriter 비활성화")
             return ''
         try:
-            import google.generativeai as genai  # type: ignore
-            genai.configure(api_key=self.api_key)
-            model = genai.GenerativeModel(
-                model_name=self.model,
-                generation_config={
-                    'max_output_tokens': self.max_tokens,
-                    'temperature': self.temperature,
-                },
-                system_instruction=system if system else None,
+            from google import genai  # type: ignore
+            from google.genai import types  # type: ignore
+            client = genai.Client(api_key=self.api_key)
+            full_prompt = f"{system}\n\n{prompt}" if system else prompt
+            response = client.models.generate_content(
+                model=self.model,
+                contents=full_prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                ),
             )
-            response = model.generate_content(prompt)
-            return response.text
+            return response.text or ''
         except ImportError:
-            logger.warning("google-generativeai 미설치 — GeminiWriter 비활성화")
+            logger.warning("google-genai 미설치 — GeminiWriter 비활성화")
             return ''
         except Exception as e:
             logger.error(f"GeminiWriter 오류: {e}")

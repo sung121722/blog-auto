@@ -1,3 +1,5 @@
+# 네이버 블로그 자동 발행 (Playwright)
+playwright>=1.44.0
 pytrends
 google-api-python-client
 google-auth-oauthlib
@@ -25,7 +27,7 @@ pydub
 # Phase 2 (YouTube 업로드 진행 표시)
 google-resumable-media
 # Phase 3 (엔진 추상화 — 선택적 의존성)
-# google-generativeai  # Gemini Writer / Veo 사용 시 pip install google-generativeai
+google-genai  # Gemini Writer
 # Shorts Bot (Phase A)
 edge-tts>=6.1.0
 # openai-whisper        # Edge TTS 단어별 타임스탬프용 (선택, pip install openai-whisper)
