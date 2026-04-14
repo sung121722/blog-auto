@@ -101,8 +101,13 @@ English tags only, no Korean. Example: nostalgia, baby boomer, 1960s, childhood,
 
 ---BODY---
 Blogger-ready HTML body. Use <h2> for section headings, <p> for paragraphs.
-IMPORTANT: Write MINIMUM 800 words — do not stop early. Warm, conversational tone. Include 1–2 reader questions. Use at least 4 paragraphs per section.
-Spell-check all words before output.
+SEO RULES (follow all of these):
+1. Write MINIMUM 1000 words — do not stop early.
+2. Include the main topic keyword naturally in the FIRST paragraph.
+3. Use at least 4 <h2> headings. Make them specific questions or phrases (e.g. "What Made Summer Nights So Different Back Then?" not just "Summer Nights").
+4. Each <h2> section must have at least 3 <p> paragraphs.
+5. Warm, conversational tone. Include 1–2 reader questions ("Do you remember...?").
+6. Spell-check all words before output.
 
 ---KEY_POINTS---
 - Key point 1

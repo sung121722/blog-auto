@@ -146,6 +146,45 @@ def markdown_to_html(md_text: str) -> str:
     return html, ''  # toc 항상 빈 값
 
 
+def add_image_alt_tags(html: str, title: str, tags: list) -> str:
+    """alt 없는 img 태그에 자동으로 alt 속성 추가 (SEO)"""
+    soup = BeautifulSoup(html, 'lxml')
+    keyword = title.split('–')[0].strip() if '–' in title else title[:60]
+    for i, img in enumerate(soup.find_all('img')):
+        if not img.get('alt'):
+            suffix = f', {tags[i % len(tags)]}' if tags else ''
+            img['alt'] = f'{keyword}{suffix}'
+    return str(soup)
+
+
+def add_internal_links(html: str) -> str:
+    """최근 발행된 글 3개를 'You Might Also Like' 섹션으로 본문 끝에 추가 (SEO 내부링크)"""
+    published_dir = DATA_DIR / 'published'
+    if not published_dir.exists():
+        return html
+    records = sorted(published_dir.glob('*.json'), reverse=True)[:5]
+    links = []
+    for rec_path in records:
+        try:
+            rec = json.loads(rec_path.read_text(encoding='utf-8'))
+            post_url = rec.get('url', '')
+            post_title = rec.get('title', '')
+            if post_url and post_title:
+                links.append(f'<li><a href="{post_url}" rel="bookmark">{post_title}</a></li>')
+        except Exception:
+            pass
+    if not links:
+        return html
+    related = (
+        '\n<hr/>'
+        '\n<h2>You Might Also Like</h2>'
+        '\n<ul style="line-height:2;">'
+        + ''.join(links[:3])
+        + '\n</ul>\n'
+    )
+    return html + related
+
+
 def insert_adsense_placeholders(html: str) -> str:
     """두 번째 H2 뒤와 결론 섹션 앞에 AdSense 플레이스홀더 삽입"""
     AD_SLOT_1 = '\n<!-- AD_SLOT_1 -->\n'
@@ -353,13 +392,21 @@ def publish(article: dict) -> bool:
         return False
 
     # 변환봇이 미리 생성한 HTML이 있으면 재사용, 없으면 직접 변환
+    tags_list = article.get('tags', [])
+    if isinstance(tags_list, str):
+        tags_list = [t.strip() for t in tags_list.split(',')]
+
     if article.get('_html_content'):
-        full_html = article['_html_content']
+        body_html = article['_html_content']
     else:
-        # 마크다운 → HTML (fallback)
         body_html, toc_html = markdown_to_html(article.get('body', ''))
-        body_html = insert_adsense_placeholders(body_html)
-        full_html = build_full_html(article, body_html, toc_html)
+        toc_html = ''
+
+    # SEO 처리
+    body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
+    body_html = insert_adsense_placeholders(body_html)
+    body_html = add_internal_links(body_html)
+    full_html = build_full_html(article, body_html, '')
 
     # Google 인증
     try:
