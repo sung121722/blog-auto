@@ -2,7 +2,7 @@ name: Auto Publish Blog
 
 on:
   schedule:
-    - cron: '0 11 * * 1-6'  # 매일 오후 8시 KST (UTC 11:00), 월~토
+    - cron: '0 18 * * 0-5'  # 새벽 3시 KST (UTC 18:00), 월~토
   workflow_dispatch:
 
 jobs:
@@ -28,16 +28,18 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           BLOG_MAIN_ID: ${{ secrets.BLOG_MAIN_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
-          printf "GOOGLE_CLIENT_ID=%s\n" "$GOOGLE_CLIENT_ID" >> .env
-          printf "GOOGLE_CLIENT_SECRET=%s\n" "$GOOGLE_CLIENT_SECRET" >> .env
-          printf "GOOGLE_REFRESH_TOKEN=%s\n" "$GOOGLE_REFRESH_TOKEN" >> .env
-          printf "BLOG_MAIN_ID=%s\n" "$BLOG_MAIN_ID" >> .env
-          printf "GEMINI_API_KEY=%s\n" "$GEMINI_API_KEY" >> .env
-          printf "UNSPLASH_ACCESS_KEY=%s\n" "$UNSPLASH_ACCESS_KEY" >> .env
-          printf "PEXELS_API_KEY=%s\n" "$PEXELS_API_KEY" >> .env
+          printf 'GOOGLE_CLIENT_ID=%s\n' $GOOGLE_CLIENT_ID >> .env
+          printf 'GOOGLE_CLIENT_SECRET=%s\n' $GOOGLE_CLIENT_SECRET >> .env
+          printf 'GOOGLE_REFRESH_TOKEN=%s\n' $GOOGLE_REFRESH_TOKEN >> .env
+          printf 'BLOG_MAIN_ID=%s\n' $BLOG_MAIN_ID >> .env
+          printf 'GEMINI_API_KEY=%s\n' $GEMINI_API_KEY >> .env
+          printf 'ANTHROPIC_API_KEY=%s\n' $ANTHROPIC_API_KEY >> .env
+          printf 'UNSPLASH_ACCESS_KEY=%s\n' $UNSPLASH_ACCESS_KEY >> .env
+          printf 'PEXELS_API_KEY=%s\n' $PEXELS_API_KEY >> .env
 
       - name: Run auto publish
         run: python auto_publish.py
