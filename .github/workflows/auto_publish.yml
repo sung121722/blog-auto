@@ -28,6 +28,7 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           BLOG_MAIN_ID: ${{ secrets.BLOG_MAIN_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: |
@@ -36,6 +37,7 @@ jobs:
           printf 'GOOGLE_REFRESH_TOKEN=%s\n' $GOOGLE_REFRESH_TOKEN >> .env
           printf 'BLOG_MAIN_ID=%s\n' $BLOG_MAIN_ID >> .env
           printf 'GEMINI_API_KEY=%s\n' $GEMINI_API_KEY >> .env
+          printf 'ANTHROPIC_API_KEY=%s\n' $ANTHROPIC_API_KEY >> .env
           printf 'UNSPLASH_ACCESS_KEY=%s\n' $UNSPLASH_ACCESS_KEY >> .env
           printf 'PEXELS_API_KEY=%s\n' $PEXELS_API_KEY >> .env
 
