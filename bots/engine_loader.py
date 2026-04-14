@@ -173,26 +173,35 @@ class GeminiWriter(BaseWriter):
         if not self.api_key:
             logger.warning("GEMINI_API_KEY 없음 — GeminiWriter 비활성화")
             return ''
+        import time
         try:
             from google import genai  # type: ignore
             from google.genai import types  # type: ignore
-            client = genai.Client(api_key=self.api_key)
-            full_prompt = f"{system}\n\n{prompt}" if system else prompt
-            response = client.models.generate_content(
-                model=self.model,
-                contents=full_prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                ),
-            )
-            return response.text or ''
         except ImportError:
             logger.warning("google-genai 미설치 — GeminiWriter 비활성화")
             return ''
-        except Exception as e:
-            logger.error(f"GeminiWriter 오류: {e}")
-            return ''
+
+        client = genai.Client(api_key=self.api_key)
+        full_prompt = f"{system}\n\n{prompt}" if system else prompt
+
+        for attempt in range(1, 4):  # 최대 3회 재시도
+            try:
+                response = client.models.generate_content(
+                    model=self.model,
+                    contents=full_prompt,
+                    config=types.GenerateContentConfig(
+                        max_output_tokens=self.max_tokens,
+                        temperature=self.temperature,
+                    ),
+                )
+                return response.text or ''
+            except Exception as e:
+                logger.error(f"GeminiWriter 오류 (시도 {attempt}/3): {e}")
+                if attempt < 3:
+                    wait = 10 * attempt
+                    logger.info(f"Gemini 재시도 대기 {wait}초...")
+                    time.sleep(wait)
+        return ''
 
 
 class ClaudeCodeWriter(BaseWriter):
@@ -591,6 +600,25 @@ class ExternalGenerator(BaseImageGenerator):
         return False
 
 
+# ─── FallbackWriter ────────────────────────────────────
+
+class FallbackWriter(BaseWriter):
+    """여러 Writer를 순서대로 시도 — 앞의 Writer가 실패하면 다음으로 자동 전환"""
+
+    def __init__(self, writers: list[BaseWriter]):
+        self._writers = writers
+
+    def write(self, prompt: str, system: str = '') -> str:
+        for writer in self._writers:
+            name = writer.__class__.__name__
+            result = writer.write(prompt, system=system)
+            if result:
+                return result
+            logger.warning(f"{name} 실패 → 다음 엔진으로 전환")
+        logger.error("모든 Writer 실패")
+        return ''
+
+
 # ─── EngineLoader ───────────────────────────────────────
 
 class EngineLoader:
@@ -653,12 +681,14 @@ class EngineLoader:
             logger.warning(f"update_provider: 알 수 없는 카테고리 '{category}'")
 
     def get_writer(self) -> BaseWriter:
-        """현재 설정된 writing provider에 맞는 BaseWriter 구현체 반환"""
+        """현재 설정된 writing provider에 맞는 BaseWriter 구현체 반환.
+        gemini가 primary인 경우 claude를 자동 폴백으로 추가."""
         writing_cfg = self._config.get('writing', {})
         provider = writing_cfg.get('provider', 'claude')
-        options = writing_cfg.get('options', {}).get(provider, {})
+        all_options = writing_cfg.get('options', {})
+        options = all_options.get(provider, {})
 
-        writers = {
+        writers_map = {
             'claude': ClaudeWriter,
             'claude_code': ClaudeCodeWriter,
             'openclaw': OpenClawWriter,
@@ -666,9 +696,19 @@ class EngineLoader:
             'claude_web': ClaudeWebWriter,
             'gemini_web': GeminiWebWriter,
         }
-        cls = writers.get(provider, ClaudeWriter)
+        cls = writers_map.get(provider, ClaudeWriter)
+        primary = cls(options)
         logger.info(f"Writer 로드: {provider} ({cls.__name__})")
-        return cls(options)
+
+        # gemini가 primary일 때 claude를 폴백으로 자동 추가
+        if provider == 'gemini':
+            claude_opts = all_options.get('claude', {})
+            fallback = ClaudeWriter(claude_opts)
+            if fallback.api_key:
+                logger.info("Claude 폴백 Writer 등록")
+                return FallbackWriter([primary, fallback])
+
+        return primary
 
     def get_tts(self) -> BaseTTS:
         """현재 설정된 tts provider에 맞는 BaseTTS 구현체 반환"""

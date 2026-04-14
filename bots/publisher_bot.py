@@ -138,19 +138,12 @@ def check_safety(article: dict, safety_cfg: dict) -> tuple[bool, str]:
 # ─── HTML 변환 ─────────────────────────────────────────
 
 def markdown_to_html(md_text: str) -> str:
-    """마크다운 → HTML 변환 (목차 extension 포함)"""
+    """마크다운 → HTML 변환 (목차 없음)"""
     md = markdown.Markdown(
-        extensions=['toc', 'tables', 'fenced_code', 'attr_list'],
-        extension_configs={
-            'toc': {
-                'title': '목차',
-                'toc_depth': '2-3',
-            }
-        }
+        extensions=['tables', 'fenced_code', 'attr_list'],
     )
     html = md.convert(md_text)
-    toc = md.toc  # 목차 HTML
-    return html, toc
+    return html, ''  # toc 항상 빈 값
 
 
 def insert_adsense_placeholders(html: str) -> str:

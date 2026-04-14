@@ -49,88 +49,373 @@
     }
   },
   "topic_pool": [
-    {"category": "School Days", "topic": "The smell of chalk and wooden desks: memories of elementary school in the 1960s"},
-    {"category": "School Days", "topic": "Riding the yellow school bus: the friendships and chaos of the daily commute"},
-    {"category": "School Days", "topic": "Saturday morning cartoons: the weekly ritual every kid lived for"},
-    {"category": "School Days", "topic": "The school cafeteria pizza on Fridays — a weekly highlight we never took for granted"},
-    {"category": "School Days", "topic": "Recess and the games we played before screens: kickball, four square, and tag"},
-    {"category": "School Days", "topic": "The class field trip: freedom, packed lunches, and memories that lasted a lifetime"},
-    {"category": "School Days", "topic": "Show and tell: the day every kid got to be a star in front of the class"},
-    {"category": "School Days", "topic": "Gym class in the 1970s: the rope climb, dodgeball, and those awful uniforms"},
-    {"category": "School Days", "topic": "The school library: a quiet sanctuary of encyclopedias and Choose Your Own Adventure books"},
-    {"category": "School Days", "topic": "Passing handwritten notes in class before texting existed"},
-
-    {"category": "Teen Years & Coming of Age", "topic": "Drive-in movie theaters: romance, popcorn, and magic under the stars in the 1970s"},
-    {"category": "Teen Years & Coming of Age", "topic": "First car, first freedom: the joy and terror of getting your driver's license"},
-    {"category": "Teen Years & Coming of Age", "topic": "High school prom nights we still talk about decades later"},
-    {"category": "Teen Years & Coming of Age", "topic": "The after-school hangout spot that every generation had but can never recreate"},
-    {"category": "Teen Years & Coming of Age", "topic": "First jobs at 16: burger flipping, paper routes, and lessons money can't teach"},
-    {"category": "Teen Years & Coming of Age", "topic": "Teenage phone calls: tying up the family line for hours and the arguments that followed"},
-    {"category": "Teen Years & Coming of Age", "topic": "The mix tape: the most romantic gesture of the cassette era"},
-    {"category": "Teen Years & Coming of Age", "topic": "Curfew at midnight: the rules, the arguments, and sneaking back in"},
-    {"category": "Teen Years & Coming of Age", "topic": "Summer crushes and the heartbreak of September: love before smartphones"},
-    {"category": "Teen Years & Coming of Age", "topic": "The mall in the 1980s: more than shopping — it was a whole social universe"},
-
-    {"category": "Neighborhood Life", "topic": "When kids played outside all day and came home when the streetlights came on"},
-    {"category": "Neighborhood Life", "topic": "The corner drugstore with a soda fountain — the original neighborhood hangout"},
-    {"category": "Neighborhood Life", "topic": "Summer days at the public swimming pool: a small-town tradition we all shared"},
-    {"category": "Neighborhood Life", "topic": "Trick-or-treating door to door: a time when the whole neighborhood came alive"},
-    {"category": "Neighborhood Life", "topic": "The ice cream truck jingle that made every kid drop everything and sprint outside"},
-    {"category": "Neighborhood Life", "topic": "Lemonade stands and lawn mowers: the original childhood entrepreneurship"},
-    {"category": "Neighborhood Life", "topic": "Block parties in the 1970s: lawn chairs, potluck dishes, and neighbors who knew your name"},
-    {"category": "Neighborhood Life", "topic": "The neighborhood bully and the lessons we learned without adult intervention"},
-    {"category": "Neighborhood Life", "topic": "Building forts and tree houses: the architecture of childhood imagination"},
-    {"category": "Neighborhood Life", "topic": "Paperboy memories: the 5 AM wake-up, the wire basket, and the loyal customers"},
-
-    {"category": "Pop Culture & Entertainment", "topic": "The Ed Sullivan Show and the night the Beatles changed everything"},
-    {"category": "Pop Culture & Entertainment", "topic": "Vinyl records, eight-tracks, and cassette tapes — the evolution of how we heard music"},
-    {"category": "Pop Culture & Entertainment", "topic": "Watching the moon landing live on a black-and-white TV: where were you on July 20, 1969?"},
-    {"category": "Pop Culture & Entertainment", "topic": "The golden age of Saturday morning cartoons: Bugs Bunny, Scooby-Doo, and sugary cereal"},
-    {"category": "Pop Culture & Entertainment", "topic": "Drive-in restaurants and carhops: the original fast food experience"},
-    {"category": "Pop Culture & Entertainment", "topic": "American Bandstand and Soul Train: how teenagers learned to dance from their TV screens"},
-    {"category": "Pop Culture & Entertainment", "topic": "The video arcade in the early 1980s: quarters, Pac-Man, and a whole new world"},
-    {"category": "Pop Culture & Entertainment", "topic": "Watching M*A*S*H, Happy Days, and All in the Family as a family every week"},
-    {"category": "Pop Culture & Entertainment", "topic": "The Sears Christmas catalog: the toy bible every American kid memorized in November"},
-    {"category": "Pop Culture & Entertainment", "topic": "The drive-in movie theater double feature: two films, one speaker, and a car full of memories"},
-    {"category": "Pop Culture & Entertainment", "topic": "CB radio culture of the 1970s: truckers, 10-codes, and everyone wanting a handle"},
-    {"category": "Pop Culture & Entertainment", "topic": "The Atari 2600: how a little box with a joystick changed family life forever"},
-
-    {"category": "Food & Taste Memories", "topic": "Mom's Sunday pot roast: the meal that brought the whole family to the table"},
-    {"category": "Food & Taste Memories", "topic": "Classic American diners: the booths, the jukeboxes, and the blue plate specials"},
-    {"category": "Food & Taste Memories", "topic": "TV dinners on folding trays: a revolutionary weeknight ritual"},
-    {"category": "Food & Taste Memories", "topic": "The original McDonald's experience: 15-cent burgers and the golden arches in a small town"},
-    {"category": "Food & Taste Memories", "topic": "Jell-O molds, deviled eggs, and casseroles: the potluck dishes of mid-century America"},
-    {"category": "Food & Taste Memories", "topic": "The soda fountain: cherry cokes, egg creams, and the counter where everyone had a stool"},
-    {"category": "Food & Taste Memories", "topic": "Penny candy and the corner store: the sugary economy of childhood"},
-    {"category": "Food & Taste Memories", "topic": "Backyard barbecues: the ritual of lighter fluid, charcoal, and waiting forever for the coals"},
-    {"category": "Food & Taste Memories", "topic": "School lunch boxes: the thermos, the trade, and the contents that defined your status"},
-    {"category": "Food & Taste Memories", "topic": "Home-canned vegetables, fresh bread, and the smells of a grandmother's kitchen"},
-
-    {"category": "Holidays & Seasons", "topic": "Christmas morning in the 1960s: unwrapping presents before sunrise"},
-    {"category": "Holidays & Seasons", "topic": "Fourth of July block parties: sparklers, watermelon, and neighborhood pride"},
-    {"category": "Holidays & Seasons", "topic": "The family road trip in a station wagon: are we there yet and no air conditioning"},
-    {"category": "Holidays & Seasons", "topic": "Snow days and sledding hills — the best surprise a winter could bring"},
-    {"category": "Holidays & Seasons", "topic": "Easter Sunday: new outfits, egg hunts, and the whole extended family at the table"},
-    {"category": "Holidays & Seasons", "topic": "Halloween costumes from a cardboard box: before costumes came in plastic bags"},
-    {"category": "Holidays & Seasons", "topic": "Thanksgiving at grandma's house: the table that barely fit everyone and the warmth that did"},
-    {"category": "Holidays & Seasons", "topic": "Summer vacation at the lake cabin: no WiFi, no schedule, just water and sunburn"},
-    {"category": "Holidays & Seasons", "topic": "The county fair in August: Ferris wheels, funnel cake, and winning a stuffed animal"},
-    {"category": "Holidays & Seasons", "topic": "New Year's Eve watching Dick Clark's Rockin' New Year's Eve: the broadcast that united America"},
-
-    {"category": "Toys, Games & Play", "topic": "Hula hoops, jump rope, and jacks: the playground craze toys of the 1950s and 60s"},
-    {"category": "Toys, Games & Play", "topic": "Board game nights before screens: Monopoly arguments that lasted until midnight"},
-    {"category": "Toys, Games & Play", "topic": "The bicycle as a symbol of freedom: summer rides and never wearing a helmet"},
-    {"category": "Toys, Games & Play", "topic": "Lincoln Logs, Tinker Toys, and Erector Sets: building things with your hands"},
-    {"category": "Toys, Games & Play", "topic": "Little League baseball and the dugout life: peanuts, sunflower seeds, and dirt-stained uniforms"},
-    {"category": "Toys, Games & Play", "topic": "Barbie's world in the 1960s: the doll that defined a generation of American girls"},
-
-    {"category": "Work, Fashion & Americana", "topic": "Bell-bottoms, mood rings, and platform shoes: the fashion of the 1970s we loved and lost"},
-    {"category": "Work, Fashion & Americana", "topic": "The milkman, the mailman, and the Fuller Brush salesman: tradespeople who came to your door"},
-    {"category": "Work, Fashion & Americana", "topic": "The family car: when choosing a new Chevy or Ford was a major life event"},
-    {"category": "Work, Fashion & Americana", "topic": "Service station attendants who pumped your gas, checked your oil, and cleaned your windshield"},
-    {"category": "Work, Fashion & Americana", "topic": "The typewriter in the office: the satisfying clack and the tyranny of correction fluid"},
-    {"category": "Work, Fashion & Americana", "topic": "The Sears catalog as a window to the world: ordering everything from clothes to houses"},
-    {"category": "Work, Fashion & Americana", "topic": "Drive-through banking and the pneumatic tube: a small miracle of suburban convenience"},
-    {"category": "Work, Fashion & Americana", "topic": "The family portrait photographer: the studio backdrop, the forced smiles, and the wallet-sized prints"}
+    {
+      "category": "School Days",
+      "topic": "The smell of chalk and wooden desks: memories of elementary school in the 1960s"
+    },
+    {
+      "category": "School Days",
+      "topic": "Riding the yellow school bus: the friendships and chaos of the daily commute"
+    },
+    {
+      "category": "School Days",
+      "topic": "Saturday morning cartoons: the weekly ritual every kid lived for"
+    },
+    {
+      "category": "School Days",
+      "topic": "The school cafeteria pizza on Fridays — a weekly highlight we never took for granted"
+    },
+    {
+      "category": "School Days",
+      "topic": "Recess and the games we played before screens: kickball, four square, and tag"
+    },
+    {
+      "category": "School Days",
+      "topic": "The class field trip: freedom, packed lunches, and memories that lasted a lifetime"
+    },
+    {
+      "category": "School Days",
+      "topic": "Show and tell: the day every kid got to be a star in front of the class"
+    },
+    {
+      "category": "School Days",
+      "topic": "Gym class in the 1970s: the rope climb, dodgeball, and those awful uniforms"
+    },
+    {
+      "category": "School Days",
+      "topic": "The school library: a quiet sanctuary of encyclopedias and Choose Your Own Adventure books"
+    },
+    {
+      "category": "School Days",
+      "topic": "Passing handwritten notes in class before texting existed"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Drive-in movie theaters: romance, popcorn, and magic under the stars in the 1970s"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "First car, first freedom: the joy and terror of getting your driver's license"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "High school prom nights we still talk about decades later"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "The after-school hangout spot that every generation had but can never recreate"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "First jobs at 16: burger flipping, paper routes, and lessons money can't teach"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Teenage phone calls: tying up the family line for hours and the arguments that followed"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "The mix tape: the most romantic gesture of the cassette era"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Curfew at midnight: the rules, the arguments, and sneaking back in"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Summer crushes and the heartbreak of September: love before smartphones"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "The mall in the 1980s: more than shopping — it was a whole social universe"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "When kids played outside all day and came home when the streetlights came on"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "The corner drugstore with a soda fountain — the original neighborhood hangout"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Summer days at the public swimming pool: a small-town tradition we all shared"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Trick-or-treating door to door: a time when the whole neighborhood came alive"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "The ice cream truck jingle that made every kid drop everything and sprint outside"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Lemonade stands and lawn mowers: the original childhood entrepreneurship"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Block parties in the 1970s: lawn chairs, potluck dishes, and neighbors who knew your name"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "The neighborhood bully and the lessons we learned without adult intervention"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Building forts and tree houses: the architecture of childhood imagination"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Paperboy memories: the 5 AM wake-up, the wire basket, and the loyal customers"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The Ed Sullivan Show and the night the Beatles changed everything"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "Vinyl records, eight-tracks, and cassette tapes — the evolution of how we heard music"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "Watching the moon landing live on a black-and-white TV: where were you on July 20, 1969?"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The golden age of Saturday morning cartoons: Bugs Bunny, Scooby-Doo, and sugary cereal"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "Drive-in restaurants and carhops: the original fast food experience"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "American Bandstand and Soul Train: how teenagers learned to dance from their TV screens"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The video arcade in the early 1980s: quarters, Pac-Man, and a whole new world"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "Watching M*A*S*H, Happy Days, and All in the Family as a family every week"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The Sears Christmas catalog: the toy bible every American kid memorized in November"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The drive-in movie theater double feature: two films, one speaker, and a car full of memories"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "CB radio culture of the 1970s: truckers, 10-codes, and everyone wanting a handle"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The Atari 2600: how a little box with a joystick changed family life forever"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Mom's Sunday pot roast: the meal that brought the whole family to the table"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Classic American diners: the booths, the jukeboxes, and the blue plate specials"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "TV dinners on folding trays: a revolutionary weeknight ritual"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "The original McDonald's experience: 15-cent burgers and the golden arches in a small town"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Jell-O molds, deviled eggs, and casseroles: the potluck dishes of mid-century America"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "The soda fountain: cherry cokes, egg creams, and the counter where everyone had a stool"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Penny candy and the corner store: the sugary economy of childhood"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Backyard barbecues: the ritual of lighter fluid, charcoal, and waiting forever for the coals"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "School lunch boxes: the thermos, the trade, and the contents that defined your status"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Home-canned vegetables, fresh bread, and the smells of a grandmother's kitchen"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Christmas morning in the 1960s: unwrapping presents before sunrise"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Fourth of July block parties: sparklers, watermelon, and neighborhood pride"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "The family road trip in a station wagon: are we there yet and no air conditioning"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Snow days and sledding hills — the best surprise a winter could bring"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Easter Sunday: new outfits, egg hunts, and the whole extended family at the table"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Halloween costumes from a cardboard box: before costumes came in plastic bags"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Thanksgiving at grandma's house: the table that barely fit everyone and the warmth that did"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Summer vacation at the lake cabin: no WiFi, no schedule, just water and sunburn"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "The county fair in August: Ferris wheels, funnel cake, and winning a stuffed animal"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "New Year's Eve watching Dick Clark's Rockin' New Year's Eve: the broadcast that united America"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Hula hoops, jump rope, and jacks: the playground craze toys of the 1950s and 60s"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Board game nights before screens: Monopoly arguments that lasted until midnight"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "The bicycle as a symbol of freedom: summer rides and never wearing a helmet"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Lincoln Logs, Tinker Toys, and Erector Sets: building things with your hands"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Little League baseball and the dugout life: peanuts, sunflower seeds, and dirt-stained uniforms"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Barbie's world in the 1960s: the doll that defined a generation of American girls"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "Bell-bottoms, mood rings, and platform shoes: the fashion of the 1970s we loved and lost"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The milkman, the mailman, and the Fuller Brush salesman: tradespeople who came to your door"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The family car: when choosing a new Chevy or Ford was a major life event"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "Service station attendants who pumped your gas, checked your oil, and cleaned your windshield"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The typewriter in the office: the satisfying clack and the tyranny of correction fluid"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The Sears catalog as a window to the world: ordering everything from clothes to houses"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "Drive-through banking and the pneumatic tube: a small miracle of suburban convenience"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The family portrait photographer: the studio backdrop, the forced smiles, and the wallet-sized prints"
+    },
+    {
+      "category": "School Days",
+      "topic": "Those metal lunch boxes with the thermos that never kept anything cold: opening it at noon to find a soggy sandwich and a sweating butter compartment"
+    },
+    {
+      "category": "School Days",
+      "topic": "Detention and the paddle: waiting outside the principal's office in 1975, knowing your parents would be called, and that wooden paddle hanging on the wall"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Sneaking into R-rated movies with a fake ID: that nervous feeling handing it to the teenage ticket seller and praying they wouldn't look twice"
+    },
+    {
+      "category": "Teen Years & Coming of Age",
+      "topic": "Slow dancing to 'Stairway to Heaven' in someone's basement rec room while their parents were upstairs: the smell of cheap cologne, wood paneling, and teenage possibility"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "Casserole night at the church basement: tuna, cream of mushroom soup, and those mysterious green bean dishes that somehow tasted better when someone else's mother made them"
+    },
+    {
+      "category": "Food & Taste Memories",
+      "topic": "The taste of a frozen TV dinner's crispy fried chicken compartment and that peculiar metallic aftertaste from eating straight off the aluminum tray with a metal fork"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "Playing with Marx plastic army men in the sandbox: creating elaborate battle scenes that lasted all afternoon"
+    },
+    {
+      "category": "Toys, Games & Play",
+      "topic": "The magic of Silly Bandz and trading them at recess: those colorful rubber bracelets that had us all obsessed in the 70s"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "Remember staying up past midnight to watch the Tonight Show with Johnny Carson and his opening monologue that had the whole country laughing the next day?"
+    },
+    {
+      "category": "Pop Culture & Entertainment",
+      "topic": "The smell of popcorn butter and the magic of catching a glimpse of your favorite movie star at the premiere on the local news — Hollywood felt so close yet impossibly far away"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "Decorating the aluminum Christmas tree with color wheel: that rotating light that made everything magical in the living room"
+    },
+    {
+      "category": "Holidays & Seasons",
+      "topic": "The smell of your mother's fruitcake soaking in brandy all through November and December: whether you ate it or not, you knew the holidays were coming"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "The milkman's early morning deliveries and the glass bottles left on the front porch — when someone else did your shopping"
+    },
+    {
+      "category": "Neighborhood Life",
+      "topic": "Mrs. Henderson's front porch and how the neighborhood watch happened naturally, one rocking chair at a time"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The polyester leisure suit: why every man's closet had one in 1975, and why we'd rather forget the photos"
+    },
+    {
+      "category": "Work, Fashion & Americana",
+      "topic": "The five-and-dime store on Main Street: where you could buy a greeting card, lunch at the counter, and a pair of pantyhose all in one trip"
+    }
   ]
 }

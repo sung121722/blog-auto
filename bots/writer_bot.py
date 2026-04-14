@@ -58,14 +58,24 @@ def _build_prompt(topic_data: dict, style_prefix: str = "") -> tuple[str, str]:
     system = (
         "You are a professional senior nostalgia blog writer. "
         "Your audience is American Baby Boomers and Gen X readers (ages 50–80). "
-        "Write warm, engaging, conversational English. "
+        "Write like a 68-year-old American grandpa talking to his old friends. "
+        "Use short sentences. Like this. Not too long. "
+        "Never use words like: tapestry, whimsical, bustling, realm, vibrant. "
+        "Never start sentences with 'Ah,' or 'Oh,' — it sounds fake. "
+        "Never open with a one-word sentence like 'Summer.' or 'School.' followed by a generic reflection. Start mid-thought, like you're already in the story. "
+        "Include ONE specific year or date somewhere in the article when possible. "
+        "Sound like a real person, not a writer. "
+        "Write warm, conversational English. "
         "Always proofread for spelling and grammar before outputting. "
+        "NEVER include a table of contents or any navigation list. Do not output any Korean text. "
         "Output ONLY the section headers below with their content — no extra commentary. "
         "BODY must be Blogger-ready HTML with proper <h2>, <p>, <strong> tags."
     )
     if style_prefix:
         system = style_prefix + system
-    prompt = f"""Write an English nostalgia blog article based on the topic below.
+    prompt = f"""CRITICAL: Your response MUST start with ---TITLE--- and use ONLY the section headers listed below. Do NOT output raw HTML or any text before ---TITLE---. If you skip the headers, the system will crash.
+
+Write an English nostalgia blog article based on the topic below.
 
 Topic: {topic}
 Corner: {corner}
