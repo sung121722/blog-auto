@@ -405,7 +405,6 @@ def publish(article: dict) -> bool:
     # SEO 처리
     body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
     body_html = insert_adsense_placeholders(body_html)
-    body_html = add_internal_links(body_html)
     full_html = build_full_html(article, body_html, '')
 
     # Google 인증
