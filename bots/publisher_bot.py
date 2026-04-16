@@ -185,6 +185,59 @@ def add_internal_links(html: str) -> str:
     return html + related
 
 
+def add_reading_time(html: str) -> str:
+    """글 상단에 읽기 예상 시간 추가 (SEO 체류시간 개선)"""
+    soup = BeautifulSoup(html, 'lxml')
+    text = soup.get_text()
+    word_count = len(text.split())
+    minutes = max(1, round(word_count / 200))
+    badge = (
+        f'<p style="color:#888;font-size:13px;margin-bottom:16px;">'
+        f'⏱ {minutes} min read &nbsp;·&nbsp; {word_count:,} words'
+        f'</p>'
+    )
+    # 첫 번째 태그 앞에 삽입
+    first_tag = soup.find(['h2', 'p'])
+    if first_tag:
+        first_tag.insert_before(BeautifulSoup(badge, 'html.parser'))
+    return str(soup)
+
+
+def add_faq_schema(article: dict, faq_items: list) -> str:
+    """FAQ Schema.org JSON-LD 생성 (구글 FAQ 스니펫 노출용)"""
+    if not faq_items:
+        return ''
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": item.get('q', ''),
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": item.get('a', '')
+                }
+            }
+            for item in faq_items if item.get('q') and item.get('a')
+        ]
+    }
+    if not schema['mainEntity']:
+        return ''
+    return f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
+
+
+def parse_faq_from_body(body_html: str) -> list:
+    """본문 HTML에서 FAQ 섹션 파싱 (---FAQ--- 마커 또는 마지막 섹션)"""
+    import re
+    faq_items = []
+    # Q: / A: 패턴 찾기
+    qa_pattern = re.findall(r'<strong>Q[:\.]?\s*(.+?)</strong>\s*<[^>]+>\s*A[:\.]?\s*(.+?)</[^>]+>', body_html, re.DOTALL)
+    for q, a in qa_pattern[:5]:
+        faq_items.append({'q': re.sub(r'<[^>]+>', '', q).strip(), 'a': re.sub(r'<[^>]+>', '', a).strip()})
+    return faq_items
+
+
 def insert_adsense_placeholders(html: str) -> str:
     """두 번째 H2 뒤와 결론 섹션 앞에 AdSense 플레이스홀더 삽입"""
     AD_SLOT_1 = '\n<!-- AD_SLOT_1 -->\n'
@@ -210,21 +263,29 @@ def insert_adsense_placeholders(html: str) -> str:
 
 
 def build_json_ld(article: dict, blog_url: str = '') -> str:
-    """Schema.org Article JSON-LD 생성"""
+    """Schema.org Article JSON-LD + Open Graph 메타 태그 생성"""
+    title = article.get('title', '')
+    description = article.get('meta', '')
+    tags = article.get('tags', [])
+    if isinstance(tags, str):
+        tags = [t.strip() for t in tags.split(',')]
+    keywords = ', '.join(tags)
+
     schema = {
         "@context": "https://schema.org",
         "@type": "Article",
-        "headline": article.get('title', ''),
-        "description": article.get('meta', ''),
+        "headline": title,
+        "description": description,
+        "keywords": keywords,
         "datePublished": datetime.now(timezone.utc).isoformat(),
         "dateModified": datetime.now(timezone.utc).isoformat(),
         "author": {
             "@type": "Person",
-            "name": "테크인사이더"
+            "name": "Senior Memories"
         },
         "publisher": {
             "@type": "Organization",
-            "name": "테크인사이더",
+            "name": "Senior Memories",
             "logo": {
                 "@type": "ImageObject",
                 "url": ""
@@ -235,15 +296,34 @@ def build_json_ld(article: dict, blog_url: str = '') -> str:
             "@id": blog_url
         }
     }
-    return f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
+
+    # Open Graph 태그 (소셜 공유 미리보기)
+    og_tags = f'''<!-- Open Graph -->
+<meta property="og:type" content="article" />
+<meta property="og:title" content="{title}" />
+<meta property="og:description" content="{description}" />
+<meta property="og:url" content="{blog_url}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{title}" />
+<meta name="twitter:description" content="{description}" />
+<meta name="keywords" content="{keywords}" />'''
+
+    json_ld = f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
+    return og_tags + '\n' + json_ld
 
 
-def build_full_html(article: dict, body_html: str, toc_html: str) -> str:
-    """최종 HTML 조합: JSON-LD + 목차 + 본문 + 면책 문구"""
-    json_ld = build_json_ld(article)
+def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str = '') -> str:
+    """최종 HTML 조합: JSON-LD + OG + 읽기시간 + 본문 + FAQ스키마 + 면책 문구"""
+    json_ld = build_json_ld(article, blog_url)
     disclaimer = article.get('disclaimer', '')
 
+    # FAQ 스키마 파싱 및 추가
+    faq_items = parse_faq_from_body(body_html)
+    faq_schema = add_faq_schema(article, faq_items)
+
     html_parts = [json_ld]
+    if faq_schema:
+        html_parts.append(faq_schema)
     if toc_html:
         html_parts.append(f'<div class="toc-wrapper">{toc_html}</div>')
     html_parts.append(body_html)
@@ -404,6 +484,7 @@ def publish(article: dict) -> bool:
 
     # SEO 처리
     body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
+    body_html = add_reading_time(body_html)
     body_html = insert_adsense_placeholders(body_html)
     body_html = add_internal_links(body_html)
     full_html = build_full_html(article, body_html, '')

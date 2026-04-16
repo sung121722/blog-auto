@@ -120,6 +120,12 @@ keyword1, keyword2
 ---SOURCES---
 {source} | {published_at}
 
+---FAQ---
+Write 3 frequently asked questions and answers related to the topic.
+Format exactly like this (repeat 3 times):
+<strong>Q: [question]</strong>
+<p>A: [answer in 2-3 sentences]</p>
+
 ---DISCLAIMER---
 (optional short disclaimer if needed, else leave blank)
 """

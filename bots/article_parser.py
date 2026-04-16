@@ -53,13 +53,19 @@ def parse_output(raw_output: str) -> Optional[dict]:
             key_points.append(line)
     key_points = key_points[:3]  # 최대 3개
 
+    # FAQ 파싱 후 본문 끝에 HTML로 붙이기
+    faq_raw = sections.get('FAQ', '')
+    body = sections.get('BODY', '')
+    if faq_raw.strip():
+        body = body + '\n\n<h2>Frequently Asked Questions</h2>\n' + faq_raw.strip()
+
     return {
         'title': sections.get('TITLE', ''),
         'meta': sections.get('META', ''),
         'slug': sections.get('SLUG', ''),
         'tags': tags,
         'corner': sections.get('CORNER', ''),
-        'body': sections.get('BODY', ''),
+        'body': body,
         'coupang_keywords': coupang_keywords,
         'key_points': key_points,
         'sources': sources,
