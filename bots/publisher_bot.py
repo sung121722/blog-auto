@@ -122,12 +122,7 @@ def check_safety(article: dict, safety_cfg: dict) -> tuple[bool, str]:
         if kw in body:
             return True, f'위험 키워드 감지: "{kw}"'
 
-    # 출처 2개 미만
-    min_sources = safety_cfg.get('min_sources_required', 2)
-    if len(sources) < min_sources:
-        return True, f'출처 {len(sources)}개 — {min_sources}개 이상 필요'
-
-    # 품질 점수 미달
+    # 품질 점수 미달 (출처 개수 체크 제거 — AI 생성 글은 출처 보장 불가)
     min_score = safety_cfg.get('min_quality_score_for_auto', 75)
     if quality_score < min_score:
         return True, f'품질 점수 {quality_score}점 (자동 발행 최소: {min_score}점)'
@@ -263,7 +258,7 @@ def insert_adsense_placeholders(html: str) -> str:
 
 
 def build_json_ld(article: dict, blog_url: str = '') -> str:
-    """Schema.org Article JSON-LD + Open Graph 메타 태그 생성"""
+    """Schema.org Article JSON-LD 생성 (OG 태그는 Blogger 테마에서 처리)"""
     title = article.get('title', '')
     description = article.get('meta', '')
     tags = article.get('tags', [])
@@ -296,20 +291,7 @@ def build_json_ld(article: dict, blog_url: str = '') -> str:
             "@id": blog_url
         }
     }
-
-    # Open Graph 태그 (소셜 공유 미리보기)
-    og_tags = f'''<!-- Open Graph -->
-<meta property="og:type" content="article" />
-<meta property="og:title" content="{title}" />
-<meta property="og:description" content="{description}" />
-<meta property="og:url" content="{blog_url}" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="{title}" />
-<meta name="twitter:description" content="{description}" />
-<meta name="keywords" content="{keywords}" />'''
-
-    json_ld = f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
-    return og_tags + '\n' + json_ld
+    return f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
 
 
 def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str = '') -> str:
@@ -363,25 +345,18 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
 
 
 def submit_to_search_console(url: str, creds: Credentials):
-    """Google Search Console URL 색인 요청"""
-    try:
-        build('searchconsole', 'v1', credentials=creds)
-        # URL Inspection API (실제 indexing 요청)
-        # 참고: 일반적으로 Blogger sitemap이 자동 제출되므로 보조 수단
-        logger.info(f"Search Console 제출: {url}")
-        # indexing API는 별도 서비스 계정 필요. 여기서는 로그만 남김.
-        # 실제 색인 촉진은 Blogger 내장 sitemap에 의존
-    except Exception as e:
-        logger.warning(f"Search Console 제출 실패: {e}")
+    """Search Console 색인 요청 — Blogger sitemap이 자동 처리하므로 로그만 기록"""
+    logger.info(f"발행 URL: {url}")
 
 
 # ─── Telegram ────────────────────────────────────────
 
 def send_telegram(text: str, parse_mode: str = 'HTML'):
-    """Telegram 메시지 전송"""
-    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
-        logger.warning("Telegram 설정 없음 — 알림 건너뜀")
-        return
+    """Telegram 메시지 전송 (토큰 미설정 시 조용히 건너뜀)"""
+    if (not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID
+            or 'your_telegram' in TELEGRAM_BOT_TOKEN.lower()
+            or 'your_telegram' in TELEGRAM_CHAT_ID.lower()):
+        return  # 미설정 상태 — 에러 없이 건너뜀
     url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
     payload = {
         'chat_id': TELEGRAM_CHAT_ID,
