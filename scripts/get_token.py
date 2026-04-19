@@ -36,9 +36,15 @@ def main():
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            print("[OK] 기존 토큰 갱신 완료")
-        else:
+            try:
+                creds.refresh(Request())
+                print("[OK] 기존 토큰 갱신 완료")
+            except Exception as e:
+                print(f"[WARN] 토큰 갱신 실패 ({e}) — 브라우저 재인증 시작")
+                os.remove(TOKEN_PATH)
+                creds = None
+
+        if not creds or not creds.valid:
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
             print("[OK] 새 토큰 발급 완료")
