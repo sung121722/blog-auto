@@ -152,29 +152,62 @@ def add_image_alt_tags(html: str, title: str, tags: list) -> str:
     return str(soup)
 
 
-def add_internal_links(html: str) -> str:
-    """최근 발행된 글 3개를 'You Might Also Like' 섹션으로 본문 끝에 추가 (SEO 내부링크)"""
+def add_internal_links(html: str, category_key: str = None) -> str:
+    """'You Might Also Like' 섹션 — 같은 카테고리 글 우선, 부족하면 최근 글로 보충 (SEO 내부링크)"""
     published_dir = DATA_DIR / 'published'
     if not published_dir.exists():
         return html
-    records = sorted(published_dir.glob('*.json'), reverse=True)[:5]
-    links = []
-    for rec_path in records:
+
+    all_records = sorted(published_dir.glob('*.json'), reverse=True)
+
+    def _load(path):
         try:
-            rec = json.loads(rec_path.read_text(encoding='utf-8'))
-            post_url = rec.get('url', '')
-            post_title = rec.get('title', '')
-            if post_url and post_title:
-                links.append(f'<li><a href="{post_url}" rel="bookmark">{post_title}</a></li>')
+            return json.loads(path.read_text(encoding='utf-8'))
         except Exception:
-            pass
-    if not links:
+            return None
+
+    same_cat, other = [], []
+    for p in all_records:
+        rec = _load(p)
+        if not rec:
+            continue
+        url = rec.get('url', '')
+        title = rec.get('title', '')
+        if not url or not title:
+            continue
+        if category_key and rec.get('category_key') == category_key:
+            same_cat.append(rec)
+        else:
+            other.append(rec)
+
+    # 같은 카테고리 최대 3개 + 부족하면 타 카테고리로 보충
+    picked = same_cat[:3]
+    if len(picked) < 3:
+        picked += other[:3 - len(picked)]
+
+    if not picked:
         return html
+
+    # 같은 카테고리 글이 있으면 섹션 헤딩에 카테고리명 표시
+    CATEGORY_LABELS = {
+        'A': 'Medicare & Senior Living',
+        'B': 'Retirement & Estate Planning',
+        'C': 'Aging in Place',
+    }
+    if same_cat and category_key in CATEGORY_LABELS:
+        heading = f'More on {CATEGORY_LABELS[category_key]}'
+    else:
+        heading = 'You Might Also Like'
+
+    links_html = ''.join(
+        f'<li><a href="{r["url"]}" rel="bookmark">{r["title"]}</a></li>'
+        for r in picked
+    )
     related = (
         '\n<hr/>'
-        '\n<h2>You Might Also Like</h2>'
+        f'\n<h2>{heading}</h2>'
         '\n<ul style="line-height:2;">'
-        + ''.join(links[:3])
+        + links_html
         + '\n</ul>\n'
     )
     return html + related
@@ -395,6 +428,7 @@ def log_published(article: dict, post_result: dict):
     record = {
         'title': article.get('title', ''),
         'corner': article.get('corner', ''),
+        'category_key': article.get('category_key', ''),   # A/B/C 카테고리 키
         'url': post_result.get('url', ''),
         'post_id': post_result.get('id', ''),
         'published_at': datetime.now(timezone.utc).isoformat(),
@@ -461,7 +495,7 @@ def publish(article: dict) -> bool:
     body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
     body_html = add_reading_time(body_html)
     body_html = insert_adsense_placeholders(body_html)
-    body_html = add_internal_links(body_html)
+    body_html = add_internal_links(body_html, category_key=article.get('category_key'))
     full_html = build_full_html(article, body_html, '')
 
     # Google 인증

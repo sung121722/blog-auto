@@ -118,9 +118,10 @@ def run():
         'slug':          make_slug(post['title']),
         'tags':          all_tags,
         'corner':        category_info['name'],
-        'body':          '',           # HTML 직접 사용
-        '_html_content': full_html,    # publisher_bot이 이걸 우선 사용
-        'quality_score': 80,           # 안전장치 통과
+        'category_key':  category_key,           # A/B/C — 내부링크 카테고리 매칭용
+        'body':          '',                     # HTML 직접 사용
+        '_html_content': full_html,              # publisher_bot이 이걸 우선 사용
+        'quality_score': 80,                     # 안전장치 통과
         'sources':       [],
         'disclaimer':    '',
     }
