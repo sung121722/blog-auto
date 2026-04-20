@@ -2,8 +2,8 @@ name: Auto Publish Blog
 
 on:
   schedule:
-    - cron: '0 18 * * 0-5'  # 새벽 3시 KST (UTC 18:00 전날), 월~토
-    - cron: '0 0 * * 1-6'   # 오전 9시 KST (UTC 00:00), 월~토
+    - cron: '0 18 * * *'  # 새벽 3시 KST (UTC 18:00) — 매일
+    - cron: '0 0 * * *'   # 오전 9시 KST (UTC 00:00) — 매일
   workflow_dispatch:
 
 jobs:
