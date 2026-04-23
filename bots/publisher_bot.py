@@ -143,7 +143,7 @@ def markdown_to_html(md_text: str) -> str:
 
 def add_image_alt_tags(html: str, title: str, tags: list) -> str:
     """alt 없는 img 태그에 자동으로 alt 속성 추가 (SEO)"""
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html, 'html.parser')
     keyword = title.split('–')[0].strip() if '–' in title else title[:60]
     for i, img in enumerate(soup.find_all('img')):
         if not img.get('alt'):
@@ -215,7 +215,7 @@ def add_internal_links(html: str, category_key: str = None) -> str:
 
 def add_reading_time(html: str) -> str:
     """글 상단에 읽기 예상 시간 추가 (SEO 체류시간 개선)"""
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html, 'html.parser')
     text = soup.get_text()
     word_count = len(text.split())
     minutes = max(1, round(word_count / 200))
@@ -268,10 +268,10 @@ def parse_faq_from_body(body_html: str) -> list:
 
 def insert_adsense_placeholders(html: str) -> str:
     """두 번째 H2 뒤와 결론 섹션 앞에 AdSense 플레이스홀더 삽입"""
-    AD_SLOT_1 = '\n<!-- AD_SLOT_1 -->\n'
-    AD_SLOT_2 = '\n<!-- AD_SLOT_2 -->\n'
+    AD_SLOT_1 = ''
+    AD_SLOT_2 = ''
 
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html, 'html.parser')
     h2_tags = soup.find_all('h2')
 
     # 두 번째 H2 뒤에 AD_SLOT_1 삽입
@@ -336,19 +336,12 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
     faq_items = parse_faq_from_body(body_html)
     faq_schema = add_faq_schema(article, faq_items)
 
-    # 본문 폰트 크기 wrapper (이전 글과 동일한 가독성 유지)
-    wrapped_body = (
-        '<div style="font-size:16px;line-height:1.8;color:#333;">'
-        + body_html
-        + '</div>'
-    )
-
     html_parts = [json_ld]
     if faq_schema:
         html_parts.append(faq_schema)
     if toc_html:
         html_parts.append(f'<div class="toc-wrapper">{toc_html}</div>')
-    html_parts.append(wrapped_body)
+    html_parts.append(body_html)
     if disclaimer:
         html_parts.append(f'<hr/><p class="disclaimer"><small>{disclaimer}</small></p>')
 
@@ -377,7 +370,10 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
         'labels': labels,
     }
 
-    logger.info(f'Blogger 전송: title={title[:60]}, labels={len(labels)}개')
+    logger.info(f'Blogger 전송: title={title[:60]}, labels={len(labels)}개, content={len(html_content)}자')
+    # 디버그: 전송 전 HTML 저장
+    _debug_path = Path(__file__).parent.parent / 'logs' / 'last_post_debug.html'
+    _debug_path.write_text(html_content, encoding='utf-8')
 
     result = service.posts().insert(
         blogId=blog_id,
