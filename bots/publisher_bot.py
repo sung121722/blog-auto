@@ -336,12 +336,19 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
     faq_items = parse_faq_from_body(body_html)
     faq_schema = add_faq_schema(article, faq_items)
 
+    # 본문 폰트 크기 wrapper (이전 글과 동일한 가독성 유지)
+    wrapped_body = (
+        '<div style="font-size:16px;line-height:1.8;color:#333;">'
+        + body_html
+        + '</div>'
+    )
+
     html_parts = [json_ld]
     if faq_schema:
         html_parts.append(faq_schema)
     if toc_html:
         html_parts.append(f'<div class="toc-wrapper">{toc_html}</div>')
-    html_parts.append(body_html)
+    html_parts.append(wrapped_body)
     if disclaimer:
         html_parts.append(f'<hr/><p class="disclaimer"><small>{disclaimer}</small></p>')
 
