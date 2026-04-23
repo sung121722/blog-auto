@@ -9,8 +9,13 @@ import requests
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(0, str(Path(__file__).parent / 'bots'))
+# .env 최우선 로드 (Task Scheduler / GitHub Actions 환경 대응)
+_BASE = Path(__file__).parent
+sys.path.insert(0, str(_BASE))
+sys.path.insert(0, str(_BASE / 'bots'))
+
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=_BASE / '.env', override=True)
 
 from bots import publisher_bot
 from senior_generator import generate_post

@@ -360,13 +360,17 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(',')]
     labels.extend(tags)
-    labels = list(set(filter(None, labels)))
+    labels = list(set(filter(None, labels)))[:20]  # Blogger 최대 20개 제한
+
+    title = article.get('title', '').strip()[:150]  # 제목 길이 제한
 
     body = {
-        'title': article.get('title', ''),
+        'title': title,
         'content': html_content,
         'labels': labels,
     }
+
+    logger.info(f'Blogger 전송: title={title[:60]}, labels={len(labels)}개')
 
     result = service.posts().insert(
         blogId=blog_id,

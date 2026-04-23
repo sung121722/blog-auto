@@ -112,7 +112,19 @@ def _parse_json(raw: str) -> dict:
     end = clean.rfind('}')
     if start != -1 and end != -1:
         clean = clean[start:end+1]
-    return json.loads(clean)
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError as e:
+        # 잘린 JSON 복구 시도: 마지막 완전한 필드까지만 파싱
+        logger.warning(f'JSON 파싱 오류 ({e}) — 응답이 잘렸을 수 있음. 복구 시도...')
+        # 마지막 완전한 string 값 뒤 truncate 후 닫기 시도
+        fixed = clean[:clean.rfind('"')]
+        fixed = re.sub(r',\s*$', '', fixed.rstrip()) + '}'
+        try:
+            return json.loads(fixed + '}')
+        except Exception:
+            pass
+        raise RuntimeError(f'JSON 파싱 실패 (응답 {len(raw)}자): {e}')
 
 
 # ─────────────────────────────────────────
@@ -143,12 +155,21 @@ def generate_post(category_key: str = None) -> dict:
 
     # 기존 EngineLoader 사용 (Gemini → Claude 자동 폴백)
     writer = EngineLoader().get_writer()
-    raw = writer.write(user_prompt, system=system_prompt)
 
-    if not raw:
-        raise RuntimeError('콘텐츠 생성 실패: 빈 응답')
+    post_data = None
+    for attempt in range(1, 4):  # 최대 3회 시도
+        raw = writer.write(user_prompt, system=system_prompt)
+        if not raw:
+            logger.warning(f'빈 응답 (시도 {attempt}/3)')
+            continue
+        try:
+            post_data = _parse_json(raw)
+            break
+        except RuntimeError as e:
+            logger.warning(f'파싱 실패 (시도 {attempt}/3): {e}')
 
-    post_data = _parse_json(raw)
+    if not post_data:
+        raise RuntimeError('콘텐츠 생성 실패: 3회 모두 실패')
     post_data['category_key'] = category_key
     post_data['category_info'] = category_info
     post_data['primary_keyword'] = primary_keyword
