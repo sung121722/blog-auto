@@ -4,6 +4,13 @@
   "writing": {
     "provider": "claude",
     "_comment_provider": "claude_code=Claude Code CLI(구독), openclaw=ChatGPT Pro(OAuth), claude_web=Claude Max(웹쿠키), gemini_web=Gemini Pro(웹쿠키), claude=Anthropic API키, gemini=Google AI API키",
+    "_comment_category_model_map": "카테고리별 모델 라우팅 — A/B(ultra-high CPC)는 Claude 유지, C/D(medium CPC)는 Gemini Flash로 비용 절감 (~42% 월 절감)",
+    "category_model_map": {
+      "A": "claude",
+      "B": "claude",
+      "C": "gemini",
+      "D": "gemini"
+    },
     "options": {
       "claude_code": {
         "model": "",
@@ -24,8 +31,8 @@
       },
       "claude": {
         "api_key_env": "ANTHROPIC_API_KEY",
-        "model": "claude-opus-4-6",
-        "max_tokens": 4096,
+        "model": "claude-sonnet-4-5",
+        "max_tokens": 8192,
         "temperature": 0.7
       },
       "gemini": {

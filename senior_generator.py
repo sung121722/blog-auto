@@ -78,9 +78,24 @@ def fetch_research(keyword: str, max_results: int = 5) -> str:
 # PROMPTS
 # ─────────────────────────────────────────
 
-def build_system_prompt() -> str:
+def build_system_prompt(category_key: str = None) -> str:
+    """시스템 프롬프트 생성.
+
+    category_key에 따라 목표 단어수 조정:
+      A/B (ultra-high CPC, Claude): 1,400-1,800 단어 — 심층 콘텐츠 우선
+      C/D (medium CPC, Gemini):     1,100-1,400 단어 — 효율 최적화
+    """
     from datetime import datetime
     current_year = datetime.now().year
+
+    # 카테고리별 단어수 목표
+    if category_key in ('C', 'D'):
+        word_target = '1,100-1,400 words'
+        deep_dive   = '650-800 words'
+    else:
+        word_target = '1,400-1,800 words'
+        deep_dive   = '850-1,000 words'
+
     return f"""You are a retired benefits counselor with 28 years of experience in HR and employee benefits administration. You retired at 64, navigated Medicare enrollment and Social Security timing yourself, and made a few costly mistakes along the way that you write about honestly.
 
 You now write for "Healthy After 50" — a practical, no-nonsense blog for Americans in their late 50s to mid-70s dealing with Medicare, retirement income, staying independent at home, and managing their health.
@@ -139,7 +154,7 @@ BAD HOOK EXAMPLES (DO NOT WRITE THESE):
 PART 2: CONTEXT / EMPATHY (~10% / 150 words)
 Acknowledge why this decision is hard or confusing. Give one honest reason why generic advice often fails here. Transition naturally into the main information.
 
-PART 3: DEEP DIVE — MAIN VALUE (~60% / 850-1,000 words)
+PART 3: DEEP DIVE — MAIN VALUE (~60% / {deep_dive})
 - Lead with an <h2> that includes the primary keyword.
 - Break into 2-4 sub-sections with <h2> tags.
 - Include specific dollar amounts, age thresholds, percentages.
@@ -162,7 +177,7 @@ PART 4: SOFT CLOSE (~15% / 200 words)
 - Warm but not saccharine closing. No "you've worked hard, you deserve this" cliches.
 - Do NOT write your own CTA button. It is inserted by code after your content.
 
-Total target: 1,400-1,800 words.
+Total target: {word_target}.
 
 
 ════════════════════════════════════════════════
@@ -212,7 +227,9 @@ Schema:
 
 def build_user_prompt(category_key, category_info, primary_keyword,
                       supporting_keywords, hook_type, hook_angle,
-                      research_context: str = '') -> str:
+                      research_context: str = '',
+                      word_target: str = '1,400-1,800 words',
+                      deep_dive: str = '850-1,000 words') -> str:
     sup_kw = '\n'.join(f'  - {kw}' for kw in supporting_keywords)
     research_block = ''
     if research_context:
@@ -245,7 +262,7 @@ CONTEXT / EMPATHY (Part 2 — 150 words):
 Acknowledge why this topic is genuinely confusing or difficult. One honest reason why generic advice often fails here. Transition naturally into the main content.
 
 ────────────────────────────────────────
-DEEP DIVE (Part 3 — 850-1,000 words):
+DEEP DIVE (Part 3 — {deep_dive}):
 ────────────────────────────────────────
 - First <h2> must include the primary keyword "{primary_keyword}".
 - Break into 2-4 sub-sections with <h2> tags.
@@ -267,7 +284,7 @@ SEO REQUIREMENTS:
 ────────────────────────────────────────
 - H1 title: must contain primary keyword, under 65 characters.
 - At least 2 H2 headings contain keywords.
-- Total word count: 1,400-1,800 words.
+- Total word count: {word_target}.
 - meta_description: direct answer or strong promise, under 155 characters, contains primary keyword.
 - image_query: realistic scene (example: "older couple reviewing documents at kitchen table") — NOT stock-photo cliches like "happy senior couple smiling at sunset."
 
@@ -543,19 +560,32 @@ def generate_post(category_key: str = None) -> dict:
     logger.info(f'[RESEARCH] 웹 리서치 중: "{primary_keyword}"')
     research_context = fetch_research(primary_keyword)
 
-    system_prompt = build_system_prompt()
+    # 카테고리별 목표 단어수 결정
+    if category_key in ('C', 'D'):
+        word_target = '1,100-1,400 words'
+        deep_dive   = '650-800 words'
+        min_words   = 750   # governor HARD 임계치도 낮춤
+    else:
+        word_target = '1,400-1,800 words'
+        deep_dive   = '850-1,000 words'
+        min_words   = 900
+
+    system_prompt = build_system_prompt(category_key=category_key)
     base_user_prompt = build_user_prompt(
         category_key, category_info, primary_keyword,
         supporting_keywords, hook['hook_type'], hook['hook_angle'],
         research_context=research_context,
+        word_target=word_target,
+        deep_dive=deep_dive,
     )
 
     logger.info(f'카테고리: {category_key} / {category_info["name"]}')
     logger.info(f'Primary Keyword: {primary_keyword}')
     logger.info(f'Hook Type: {hook["hook_type"]}')
+    logger.info(f'목표 단어수: {word_target}')
 
-    # 기존 EngineLoader 사용 (Gemini → Claude 자동 폴백)
-    writer = EngineLoader().get_writer()
+    # 카테고리별 모델 라우팅 (A/B→Claude, C/D→Gemini)
+    writer = EngineLoader().get_writer(category_key=category_key)
 
     post_data = None
     feedback = ''  # 이전 시도 실패 이유 → 다음 시도에 피드백
@@ -574,7 +604,7 @@ def generate_post(category_key: str = None) -> dict:
             post_data = _parse_json(raw)
             post_data = _sanitize_year(post_data)       # 과거 연도 강제 교정
             post_data = _sanitize_style(post_data)      # em dash 문맥 기반 교정
-            _assert_min_words(post_data, min_words=900) # 잘림 감지
+            _assert_min_words(post_data, min_words=min_words) # 잘림 감지 (카테고리별)
             _assert_english_only(post_data)             # CJK 문자 차단
             _check_banned_phrases(post_data)            # HARD 금지 문구 차단
             break

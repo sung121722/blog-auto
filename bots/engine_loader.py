@@ -680,30 +680,45 @@ class EngineLoader:
         else:
             logger.warning(f"update_provider: 알 수 없는 카테고리 '{category}'")
 
-    def get_writer(self) -> BaseWriter:
+    def get_writer(self, category_key: str = None) -> BaseWriter:
         """현재 설정된 writing provider에 맞는 BaseWriter 구현체 반환.
-        gemini가 primary인 경우 claude를 자동 폴백으로 추가."""
+
+        category_key 지정 시 category_model_map에 따라 모델 자동 선택:
+          A/B → claude (ultra-high CPC, 품질 우선)
+          C/D → gemini (medium CPC, 비용 절감 ~42%)
+
+        gemini가 primary일 때 claude를 자동 폴백으로 추가.
+        """
         writing_cfg = self._config.get('writing', {})
-        provider = writing_cfg.get('provider', 'claude')
-        all_options = writing_cfg.get('options', {})
+        all_options  = writing_cfg.get('options', {})
+
+        # ── 카테고리 기반 모델 라우팅 ───────────────────────────
+        provider = writing_cfg.get('provider', 'claude')  # 기본값
+        if category_key:
+            cat_map  = writing_cfg.get('category_model_map', {})
+            routed   = cat_map.get(category_key.upper())
+            if routed:
+                provider = routed
+                logger.info(f"[MODEL ROUTING] 카테고리 {category_key} → {provider}")
+
         options = all_options.get(provider, {})
 
         writers_map = {
-            'claude': ClaudeWriter,
+            'claude':      ClaudeWriter,
             'claude_code': ClaudeCodeWriter,
-            'openclaw': OpenClawWriter,
-            'gemini': GeminiWriter,
-            'claude_web': ClaudeWebWriter,
-            'gemini_web': GeminiWebWriter,
+            'openclaw':    OpenClawWriter,
+            'gemini':      GeminiWriter,
+            'claude_web':  ClaudeWebWriter,
+            'gemini_web':  GeminiWebWriter,
         }
-        cls = writers_map.get(provider, ClaudeWriter)
+        cls     = writers_map.get(provider, ClaudeWriter)
         primary = cls(options)
         logger.info(f"Writer 로드: {provider} ({cls.__name__})")
 
         # gemini가 primary일 때 claude를 폴백으로 자동 추가
         if provider == 'gemini':
             claude_opts = all_options.get('claude', {})
-            fallback = ClaudeWriter(claude_opts)
+            fallback    = ClaudeWriter(claude_opts)
             if fallback.api_key:
                 logger.info("Claude 폴백 Writer 등록")
                 return FallbackWriter([primary, fallback])
