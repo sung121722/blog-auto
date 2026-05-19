@@ -32,6 +32,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          LINK_MEDICARE: ${{ secrets.LINK_MEDICARE }}
+          LINK_RETIREMENT: ${{ secrets.LINK_RETIREMENT }}
+          LINK_AGING: ${{ secrets.LINK_AGING }}
+          LINK_HEALTH: ${{ secrets.LINK_HEALTH }}
         run: |
           printf 'GOOGLE_CLIENT_ID=%s\n' $GOOGLE_CLIENT_ID >> .env
           printf 'GOOGLE_CLIENT_SECRET=%s\n' $GOOGLE_CLIENT_SECRET >> .env
@@ -41,6 +46,11 @@ jobs:
           printf 'ANTHROPIC_API_KEY=%s\n' $ANTHROPIC_API_KEY >> .env
           printf 'UNSPLASH_ACCESS_KEY=%s\n' $UNSPLASH_ACCESS_KEY >> .env
           printf 'PEXELS_API_KEY=%s\n' $PEXELS_API_KEY >> .env
+          printf 'TAVILY_API_KEY=%s\n' $TAVILY_API_KEY >> .env
+          printf 'LINK_MEDICARE=%s\n' $LINK_MEDICARE >> .env
+          printf 'LINK_RETIREMENT=%s\n' $LINK_RETIREMENT >> .env
+          printf 'LINK_AGING=%s\n' $LINK_AGING >> .env
+          printf 'LINK_HEALTH=%s\n' $LINK_HEALTH >> .env
 
       - name: Run auto publish
         run: python auto_publish.py

@@ -55,6 +55,8 @@ SCOPES = [
     'https://www.googleapis.com/auth/webmasters',
 ]
 
+BLOG_SITEMAP_URL = 'https://kang121722.blogspot.com/sitemap.xml'
+
 
 def load_config(filename: str) -> dict:
     with open(CONFIG_DIR / filename, 'r', encoding='utf-8') as f:
@@ -152,11 +154,13 @@ def add_image_alt_tags(html: str, title: str, tags: list) -> str:
     return str(soup)
 
 
-def add_internal_links(html: str, category_key: str = None) -> str:
-    """'You Might Also Like' 섹션 — 같은 카테고리 글 우선, 부족하면 최근 글로 보충 (SEO 내부링크)"""
+def add_internal_links(category_key: str = None) -> str:
+    """카테고리 사일로 내부링크 — 동일 카테고리 글 중 1개를 '📖 연관 추천 칼럼' 박스로 반환.
+    타 카테고리 보충 없음 (사일로 철저 준수). 발행 글 없으면 빈 문자열 반환."""
+    import random as _random
     published_dir = DATA_DIR / 'published'
-    if not published_dir.exists():
-        return html
+    if not published_dir.exists() or not category_key:
+        return ''
 
     all_records = sorted(published_dir.glob('*.json'), reverse=True)
 
@@ -166,51 +170,31 @@ def add_internal_links(html: str, category_key: str = None) -> str:
         except Exception:
             return None
 
-    same_cat, other = [], []
+    same_cat = []
     for p in all_records:
         rec = _load(p)
         if not rec:
             continue
         url = rec.get('url', '')
         title = rec.get('title', '')
-        if not url or not title:
-            continue
-        if category_key and rec.get('category_key') == category_key:
+        if url and title and rec.get('category_key') == category_key:
             same_cat.append(rec)
-        else:
-            other.append(rec)
 
-    # 같은 카테고리 최대 3개 + 부족하면 타 카테고리로 보충
-    picked = same_cat[:3]
-    if len(picked) < 3:
-        picked += other[:3 - len(picked)]
+    if not same_cat:
+        return ''
 
-    if not picked:
-        return html
-
-    # 같은 카테고리 글이 있으면 섹션 헤딩에 카테고리명 표시
-    CATEGORY_LABELS = {
-        'A': 'Medicare & Senior Living',
-        'B': 'Retirement & Estate Planning',
-        'C': 'Aging in Place',
-    }
-    if same_cat and category_key in CATEGORY_LABELS:
-        heading = f'More on {CATEGORY_LABELS[category_key]}'
-    else:
-        heading = 'You Might Also Like'
-
-    links_html = ''.join(
-        f'<li><a href="{r["url"]}" rel="bookmark">{r["title"]}</a></li>'
-        for r in picked
+    picked = _random.choice(same_cat)
+    return (
+        '<div style="margin:28px 0;padding:16px 20px;'
+        'background:#f0f7ff;border-left:4px solid #3b82f6;border-radius:6px;">'
+        '<p style="margin:0;font-size:15px;color:#333;line-height:1.6;">'
+        '📖 <strong>Related Read:</strong>&nbsp;'
+        f'<a href="{picked["url"]}" rel="bookmark" '
+        'style="color:#1d4ed8;text-decoration:underline;">'
+        f'{picked["title"]}</a>'
+        '</p>'
+        '</div>'
     )
-    related = (
-        '\n<hr/>'
-        f'\n<h2>{heading}</h2>'
-        '\n<ul style="line-height:2;">'
-        + links_html
-        + '\n</ul>\n'
-    )
-    return html + related
 
 
 def add_reading_time(html: str) -> str:
@@ -327,8 +311,71 @@ def build_json_ld(article: dict, blog_url: str = '') -> str:
     return f'<script type="application/ld+json">\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n</script>'
 
 
+CTA_BLOCKS = {
+    'A': {
+        'headline': 'Want to see your actual Medigap rates?',
+        'subtext':  'Compare Plan G and Plan N quotes by ZIP code. Free, takes about 2 minutes, no sales calls required.',
+        'button':   '🔍 Compare My Rates',
+        'link_env': 'LINK_MEDICARE',
+    },
+    'B': {
+        'headline': 'Not sure which Social Security strategy fits your situation?',
+        'subtext':  'Compare claiming ages side by side and see the lifetime difference in real dollars. Free tool, no account needed.',
+        'button':   '📊 Run My Retirement Numbers',
+        'link_env': 'LINK_RETIREMENT',
+    },
+    'C': {
+        'headline': 'Want to make your home safer before a fall happens?',
+        'subtext':  'Browse top-rated grab bars, stair lifts, and medical alert systems for seniors. Most ship in 2 days.',
+        'button':   '🏠 See Top-Rated Safety Products',
+        'link_env': 'LINK_AGING',
+    },
+    'D': {
+        'headline': 'Paying too much for your prescriptions?',
+        'subtext':  'Enter your medications and ZIP code to find the lowest Part D plan price in your area. Takes 2 minutes.',
+        'button':   '💊 Find My Lowest Drug Price',
+        'link_env': 'LINK_HEALTH',
+    },
+}
+
+
+def build_cta_html(category_key: str) -> str:
+    """카테고리별 리드젠 CTA 블록 생성.
+    더미 링크(example.com/pending)도 비활성 상태로 출력 — 레이아웃 확인 + 링크 교체 즉시 활성화."""
+    cta = CTA_BLOCKS.get(category_key)
+    if not cta:
+        return ''
+    link = os.getenv(cta['link_env'], '')
+    if not link or link.startswith('https://YOUR_'):
+        return ''
+    is_pending = 'example.com/pending' in link or not link
+    if is_pending:
+        btn_style = (
+            'background-color:#adb5bd;color:white;padding:16px 32px;'
+            'text-decoration:none;font-size:18px;font-weight:bold;border-radius:8px;'
+            'display:inline-block;opacity:0.6;cursor:not-allowed;pointer-events:none;'
+        )
+        pending_note = '<p style="font-size:12px;color:#999;margin-top:8px;">(Link coming soon)</p>'
+    else:
+        btn_style = (
+            'background-color:#0056b3;color:white;padding:16px 32px;'
+            'text-decoration:none;font-size:18px;font-weight:bold;border-radius:8px;'
+            'display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.1);'
+        )
+        pending_note = ''
+    return (
+        '<div style="text-align:center;margin:35px 0;padding:20px;'
+        'background-color:#f8f9fa;border:1px solid #e9ecef;border-radius:10px;">'
+        f'<h3 style="margin-top:0;color:#333;">{cta["headline"]}</h3>'
+        f'<p style="color:#555;font-size:16px;margin-bottom:20px;">{cta["subtext"]}</p>'
+        f'<a href="{link}" style="{btn_style}">{cta["button"]}</a>'
+        f'{pending_note}'
+        '</div>'
+    )
+
+
 def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str = '') -> str:
-    """최종 HTML 조합: JSON-LD + OG + 읽기시간 + 본문 + FAQ스키마 + 면책 문구"""
+    """최종 HTML 조합: JSON-LD + OG + 읽기시간 + 본문 + FAQ스키마 + 면책 문구 + CTA"""
     json_ld = build_json_ld(article, blog_url)
     disclaimer = article.get('disclaimer', '')
 
@@ -336,14 +383,60 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
     faq_items = parse_faq_from_body(body_html)
     faq_schema = add_faq_schema(article, faq_items)
 
-    html_parts = [json_ld]
-    if faq_schema:
-        html_parts.append(faq_schema)
+    # JSON-LD script는 Blogger API가 보안상 거부 → 제외
+    html_parts = []
     if toc_html:
         html_parts.append(f'<div class="toc-wrapper">{toc_html}</div>')
     html_parts.append(body_html)
     if disclaimer:
         html_parts.append(f'<hr/><p class="disclaimer"><small>{disclaimer}</small></p>')
+
+    # 카테고리별 면책 문구 자동 삽입
+    category_key = article.get('category_key', '')
+    if category_key in ('A', 'B'):
+        disclaimer_text = (
+            '<hr style="margin:32px 0 16px;border:none;border-top:1px solid #e0e0e0;"/>'
+            '<p style="font-size:12px;color:#999;line-height:1.6;">'
+            '<strong>Disclaimer:</strong> This article is for informational purposes only and does not constitute '
+            'financial, legal, or medical advice. Medicare rules, tax laws, and Social Security benefit amounts '
+            'change annually. Always consult a licensed financial advisor, Medicare specialist, or Social Security '
+            'Administration representative before making decisions about your benefits, retirement income, or estate planning.'
+            '</p>'
+        )
+    elif category_key == 'C':
+        disclaimer_text = (
+            '<hr style="margin:32px 0 16px;border:none;border-top:1px solid #e0e0e0;"/>'
+            '<p style="font-size:12px;color:#999;line-height:1.6;">'
+            '<strong>Disclaimer:</strong> This article is for informational purposes only. '
+            'Product availability, pricing, and features may vary. Consult a healthcare professional '
+            'or occupational therapist before making home modification or medical device decisions.'
+            '</p>'
+        )
+    elif category_key == 'D':
+        disclaimer_text = (
+            '<hr style="margin:32px 0 16px;border:none;border-top:1px solid #e0e0e0;"/>'
+            '<p style="font-size:12px;color:#999;line-height:1.6;">'
+            '<strong>Disclaimer:</strong> This article is for general informational purposes only '
+            'and does not constitute medical or nutritional advice. Exercise and dietary needs vary '
+            'by individual health condition. Always consult your physician or a registered dietitian '
+            'before starting a new diet or exercise program.'
+            '</p>'
+        )
+    else:
+        disclaimer_text = ''
+
+    if disclaimer_text:
+        html_parts.append(disclaimer_text)
+
+    # 카테고리별 CTA 블록 (리드젠 링크 설정된 경우에만 삽입)
+    cta_html = build_cta_html(category_key)
+    if cta_html:
+        html_parts.append(cta_html)
+
+    # 카테고리 사일로 연관 칼럼 (CTA 바로 아래, 동일 카테고리만)
+    related_html = add_internal_links(category_key=category_key)
+    if related_html:
+        html_parts.append(related_html)
 
     return '\n'.join(html_parts)
 
@@ -355,12 +448,17 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
     service = build('blogger', 'v3', credentials=creds)
     blog_id = BLOG_MAIN_ID
 
-    labels = [article.get('corner', '')]
     tags = article.get('tags', [])
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(',')]
-    labels.extend(tags)
-    labels = list(set(filter(None, labels)))[:20]  # Blogger 최대 20개 제한
+    # corner(카테고리명)은 라벨 제외 — 너무 많은 라벨 조합이 Blogger 400 유발
+    # AI 생성 태그 최대 4개 + 고정 카테고리 라벨로 총 8개 이하 유지
+    labels = list(dict.fromkeys(filter(None, tags)))[:4]  # AI 태그 최대 4개 (순서 유지 dedup)
+    # 고정 카테고리 라벨 추가 (중복 제거)
+    for fixed in article.get('_fixed_labels', []):
+        if fixed and fixed not in labels:
+            labels.append(fixed)
+    labels = labels[:8]  # 안전장치: 최대 8개
 
     title = article.get('title', '').strip()[:150]  # 제목 길이 제한
 
@@ -370,10 +468,22 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
         'labels': labels,
     }
 
+    # 썸네일 이미지 등록 (Blogger 포스트 목록에 섬네일 표시)
+    img_url = article.get('_img_url')
+    if img_url:
+        body['images'] = [{'url': img_url}]
+
     logger.info(f'Blogger 전송: title={title[:60]}, labels={len(labels)}개, content={len(html_content)}자')
+    logger.info(f'Labels 목록: {labels}')
     # 디버그: 전송 전 HTML 저장
     _debug_path = Path(__file__).parent.parent / 'logs' / 'last_post_debug.html'
     _debug_path.write_text(html_content, encoding='utf-8')
+    # 디버그: 전송 body 전체 저장
+    import json as _json
+    (_debug_path.parent / 'last_post_body.json').write_text(
+        _json.dumps({'title': title, 'labels': labels, 'content_len': len(html_content)}, ensure_ascii=False, indent=2),
+        encoding='utf-8'
+    )
 
     result = service.posts().insert(
         blogId=blog_id,
@@ -385,8 +495,20 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
 
 
 def submit_to_search_console(url: str, creds: Credentials):
-    """Search Console 색인 요청 — Blogger sitemap이 자동 처리하므로 로그만 기록"""
-    logger.info(f"발행 URL: {url}")
+    """발행 직후 Google에 새 URL 알림 (인증 불필요한 ping 방식)"""
+    if not url:
+        return
+
+    # Search Console API — 사이트맵 재제출 (webmasters 스코프 활용)
+    try:
+        sc = build('webmasters', 'v3', credentials=creds)
+        sc.sitemaps().submit(
+            siteUrl='https://kang121722.blogspot.com/',
+            feedpath=BLOG_SITEMAP_URL,
+        ).execute()
+        logger.info('Search Console 사이트맵 재제출 완료')
+    except Exception as e:
+        logger.warning(f'Search Console 사이트맵 제출 실패: {e}')
 
 
 # ─── Telegram ────────────────────────────────────────
@@ -502,8 +624,16 @@ def publish(article: dict) -> bool:
     body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
     body_html = add_reading_time(body_html)
     body_html = insert_adsense_placeholders(body_html)
-    body_html = add_internal_links(body_html, category_key=article.get('category_key'))
+    # 내부링크는 build_full_html() 내부에서 CTA 아래에 삽입 (카테고리 사일로)
     full_html = build_full_html(article, body_html, '')
+
+    # src/href 속성 내 &amp; → & 복원 (Blogger API가 &amp; 포함 URL을 400으로 거부)
+    import re as _re
+    full_html = _re.sub(
+        r'((?:src|href)="[^"]*")',
+        lambda m: m.group(1).replace('&amp;', '&'),
+        full_html,
+    )
 
     # Google 인증
     try:
