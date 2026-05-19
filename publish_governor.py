@@ -24,11 +24,19 @@ SOFT_WARN 조건:
   6. 더미 링크 (example.com) — publisher_bot이 비활성 버튼으로 이미 처리
 """
 
+import json
 import logging
 import re
+from datetime import datetime
+from pathlib import Path
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
+
+_BASE_DIR  = Path(__file__).parent
+_LOG_DIR   = _BASE_DIR / 'logs'
+_DRAFT_DIR = _BASE_DIR / 'drafts'
+_GOV_LOG   = _LOG_DIR / 'governor.jsonl'   # 누적 품질 이력 (JSON Lines)
 
 # ─── HARD 금지 문구 (AI 특유 표현) ──────────────────────────────
 BANNED_HARD = {
@@ -57,10 +65,17 @@ _CJK_RE = re.compile(
 )
 
 # ─── 사실 오류 패턴 (HARD) ───────────────────────────────────
-# 패턴: 처방적 문맥에서 RMD 나이를 72로 언급 (역사적 서술 제외)
-# OK:   "shifted from 72 to 73" / "under the old rules at 72"
-# BAD:  "RMD begins at age 72" / "start RMDs at 72" / "RMD age is 72"
+# 규칙: 처방적 / 현재 시제 문맥의 오류만 차단
+#       역사적 서술("old rule was 72", "shifted from 72")은 통과
+#
+# 커버 영역:
+#   1. RMD 나이 오류     — SECURE 2.0 이후 73세 (2023~)
+#   2. Social Security FRA 오류 — 1960년생 이후 67세
+#   3. Medicare Part D donut hole — 2025년부터 폐지
+#   4. IRA 기여 한도 저가 표기 — 2024+ 7,000달러 (50세↑ 8,000)
+
 _FACTUAL_ERROR_PATTERNS = [
+    # ── 1. RMD ──────────────────────────────────────────────────
     (
         # "RMD begins/starts at age 72" / "RMD age is 72"
         re.compile(
@@ -68,27 +83,77 @@ _FACTUAL_ERROR_PATTERNS = [
             r'\b(?:begins?|starts?|age is|starts? at)\b.{0,30}\b72\b',
             re.IGNORECASE | re.DOTALL
         ),
-        'RMD age stated as 72 (SECURE 2.0 changed it to 73 in 2023)'
+        'RMD age stated as 72 — SECURE 2.0 changed it to 73 starting 2023'
     ),
     (
-        # "start/begin RMDs at age 72" / "take your RMD at age 72"
+        # "start/begin/take your RMD at age 72"
         re.compile(
             r'\b(?:start|begin|take|taking)\b.{0,30}'
             r'\b(?:rmd|required minimum distribution)s?\b.{0,30}'
             r'\bat age 72\b',
             re.IGNORECASE | re.DOTALL
         ),
-        'RMD age stated as 72 (correct age is 73 under SECURE 2.0)'
+        'RMD age stated as 72 — correct age is 73 under SECURE 2.0'
     ),
     (
-        # "must start RMDs at 72" / "required to start at 72"
+        # "must/required to start RMDs at 72"
         re.compile(
             r'\b(?:must|required to|have to|need to)\b.{0,30}'
             r'\b(?:start|begin|take)\b.{0,30}'
             r'\b(?:rmd|required minimum distribution)s?\b.{0,30}\b72\b',
             re.IGNORECASE | re.DOTALL
         ),
-        'RMD start requirement stated as age 72 (correct age is 73 under SECURE 2.0)'
+        'RMD start requirement stated as age 72 — correct is 73 under SECURE 2.0'
+    ),
+
+    # ── 2. Social Security Full Retirement Age ───────────────────
+    # FRA는 출생 연도에 따라 다름. 1960년생 이후 = 67세.
+    # BAD: "full retirement age is 65" / "FRA is 65" (폐지된 나이)
+    # OK:  "FRA used to be 65" / "old full retirement age of 65"
+    (
+        re.compile(
+            r'\b(?:full retirement age|fra)\b.{0,60}'
+            r'\bis\b.{0,20}\b65\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Full Retirement Age stated as 65 — FRA for those born 1960+ is 67'
+    ),
+    (
+        # "claim Social Security at full retirement at 65"
+        re.compile(
+            r'\b(?:claim|receive|collect)\b.{0,40}'
+            r'\b(?:social security|ss benefits)\b.{0,40}'
+            r'\b(?:full|full retirement)\b.{0,20}\b65\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Social Security full benefit age stated as 65 — current FRA is 66-67 depending on birth year'
+    ),
+
+    # ── 3. Medicare Part D Donut Hole ────────────────────────────
+    # 2025년부터 폐지됨 (IRA 2022). 2025+ 글에서 "donut hole" 존재 주장 차단.
+    # BAD: "you will fall into the donut hole" (현재 시제)
+    # OK:  "the donut hole used to apply" / "before 2025, the donut hole"
+    (
+        re.compile(
+            r'\b(?:fall into|enter|hit|reach)\b.{0,30}'
+            r'\b(?:the\s+)?(?:donut|doughnut)\s+hole\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Medicare Part D donut hole stated as active — it was eliminated in 2025 (IRA 2022)'
+    ),
+
+    # ── 4. IRA 기여 한도 ─────────────────────────────────────────
+    # 2024+: 기본 $7,000 / 50세 이상 $8,000 (캐치업 $1,000)
+    # BAD: "IRA contribution limit is $6,000" / "contribute up to $6,000"
+    # OK:  "the limit was $6,000 in 2022"
+    (
+        re.compile(
+            r'\b(?:ira|roth ira|traditional ira)\b.{0,60}'
+            r'\b(?:limit is|contribute up to|maximum of|up to)\b.{0,20}'
+            r'\$6[,.]?000\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'IRA contribution limit stated as $6,000 — 2024+ limit is $7,000 ($8,000 age 50+)'
     ),
 ]
 
@@ -101,6 +166,60 @@ class PublishBlocked(Exception):
 def _word_count(html: str) -> int:
     text = BeautifulSoup(html, 'html.parser').get_text()
     return len(text.split())
+
+
+# ─── 중복 제목 감지 ──────────────────────────────────────────────
+
+_TITLE_LOG = _BASE_DIR / 'data' / 'published_titles.json'
+
+
+def _title_ngrams(title: str, n: int = 2) -> set:
+    """소문자 정규화 후 n-gram 집합 생성 (단어 단위, 기본 2-gram).
+    2-gram이 3-gram보다 민감도가 높아 유사 제목을 더 잘 잡아냄."""
+    words = re.sub(r'[^a-z0-9 ]', '', title.lower()).split()
+    if len(words) < n:
+        return set(words)
+    return {' '.join(words[i:i+n]) for i in range(len(words) - n + 1)}
+
+
+def _jaccard(a: set, b: set) -> float:
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def load_published_titles() -> list:
+    if _TITLE_LOG.exists():
+        with open(_TITLE_LOG, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return []
+
+
+def save_published_title(title: str) -> None:
+    """발행 성공 후 auto_publish.py에서 호출"""
+    try:
+        titles = load_published_titles()
+        titles.append({'title': title, 'saved_at': datetime.now().isoformat(timespec='seconds')})
+        _TITLE_LOG.parent.mkdir(exist_ok=True)
+        with open(_TITLE_LOG, 'w', encoding='utf-8') as f:
+            json.dump(titles, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.warning(f'[GOVERNOR] 제목 저장 실패: {e}')
+
+
+def _check_duplicate_title(title: str, threshold: float = 0.6) -> None:
+    """기존 발행 제목과 Jaccard 유사도 0.6 이상이면 SOFT_WARN 반환."""
+    published = load_published_titles()
+    if not published:
+        return None
+    new_ngrams = _title_ngrams(title)
+    for entry in published:
+        old_title   = entry.get('title', '')
+        old_ngrams  = _title_ngrams(old_title)
+        similarity  = _jaccard(new_ngrams, old_ngrams)
+        if similarity >= threshold:
+            return f'[SOFT] 유사 제목 감지 (유사도 {similarity:.0%}): "{old_title}"'
+    return None
 
 
 def run(article: dict) -> dict:
@@ -239,6 +358,14 @@ def run(article: dict) -> dict:
         warnings.append(msg)
 
     # ═══════════════════════════════════════════════════════
+    # SOFT CHECK 7 — 중복 제목 감지 (3-gram Jaccard 유사도)
+    # ═══════════════════════════════════════════════════════
+    dup_msg = _check_duplicate_title(title)
+    if dup_msg:
+        logger.warning(dup_msg)
+        warnings.append(dup_msg)
+
+    # ═══════════════════════════════════════════════════════
     # 결과 요약
     # ═══════════════════════════════════════════════════════
     result = {
@@ -253,4 +380,48 @@ def run(article: dict) -> dict:
     else:
         logger.info(f'[GOVERNOR] 모든 검사 통과 ({wc}단어) — 발행 진행')
 
+    _log_result(title, result)
     return result
+
+
+def _log_result(title: str, result: dict) -> None:
+    """governor 실행 결과를 logs/governor.jsonl 에 누적 기록 (JSON Lines 형식)."""
+    try:
+        _LOG_DIR.mkdir(exist_ok=True)
+        record = {
+            'ts':         datetime.now().isoformat(timespec='seconds'),
+            'title':      title,
+            'word_count': result['word_count'],
+            'hard_checks': result['hard_checks'],
+            'warnings':   result['warnings'],
+            'blocked':    result['blocked'],
+        }
+        with open(_GOV_LOG, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(record, ensure_ascii=False) + '\n')
+    except Exception as e:
+        logger.warning(f'[GOVERNOR] 로그 기록 실패: {e}')
+
+
+def save_draft(article: dict, reason: str) -> Path:
+    """PublishBlocked 발생 시 article을 drafts/ 폴더에 저장.
+    auto_publish.py 의 except PublishBlocked 블록에서 호출.
+
+    Returns
+    -------
+    Path : 저장된 draft 파일 경로
+    """
+    _DRAFT_DIR.mkdir(exist_ok=True)
+    ts    = datetime.now().strftime('%Y%m%d_%H%M%S')
+    title = article.get('title', 'untitled')[:40]
+    safe  = re.sub(r'[^\w\-]', '_', title)
+    path  = _DRAFT_DIR / f'{ts}_{safe}.json'
+    payload = {
+        'saved_at':    datetime.now().isoformat(),
+        'block_reason': reason,
+        'article':     {k: v for k, v in article.items() if k != '_html_content'},
+        'html_preview': (article.get('_html_content') or '')[:500],
+    }
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+    logger.info(f'[GOVERNOR] Draft 저장: {path.name}')
+    return path

@@ -19,10 +19,10 @@ load_dotenv(dotenv_path=_BASE / '.env', override=True)
 
 from bots import publisher_bot
 from senior_generator import generate_post
-from senior_collector import collect_keywords_for_today, mark_keyword_used
+from senior_collector import collect_keywords_for_today, mark_keyword_used, mark_hook_used
 from senior_config import get_post_labels, UNSPLASH_ACCESS_KEY
 import publish_governor
-from publish_governor import PublishBlocked
+from publish_governor import PublishBlocked, save_published_title
 
 logging.basicConfig(
     level=logging.INFO,
@@ -183,7 +183,9 @@ def run():
         gov_result = publish_governor.run(article)
         logger.info(f'[GOVERNOR] 통과 — {gov_result["word_count"]}단어, 경고 {len(gov_result["warnings"])}건')
     except PublishBlocked as e:
+        draft_path = publish_governor.save_draft(article, str(e))
         logger.error(f'[GOVERNOR] 발행 차단: {e}')
+        logger.error(f'[GOVERNOR] Draft 저장 완료: {draft_path}')
         raise
 
     # 7. Blogger 발행
@@ -193,6 +195,12 @@ def run():
     if result:
         logger.info('발행 성공!')
         mark_keyword_used(post['primary_keyword'], category_key)
+        # Hook 앵글 이력 기록 (30일 쿨다운)
+        hook_info = post.get('_hook', {})
+        if hook_info.get('hook_angle'):
+            mark_hook_used(hook_info['hook_angle'], hook_info.get('hook_type', ''), category_key)
+        # 중복 방지용 제목 이력 기록
+        save_published_title(post['title'])
     else:
         logger.warning('발행 실패 또는 검토 대기')
 

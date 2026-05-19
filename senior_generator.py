@@ -21,6 +21,7 @@ from senior_config import (
     get_hook_for_category,
     CATEGORIES,
 )
+from senior_collector import get_used_hook_angles
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +278,23 @@ Return ONLY valid JSON per the schema in the system prompt. No preamble. No comm
 # JSON 파싱
 # ─────────────────────────────────────────
 
+def _close_html_tags(html: str) -> str:
+    """잘린 HTML에서 열린 태그를 닫아 파싱 가능한 상태로 복구.
+    BeautifulSoup이 내부적으로 닫아주지만, 명시적으로 닫아두면
+    태그 중첩 오류로 인한 불완전한 렌더링을 방지할 수 있다."""
+    from bs4 import BeautifulSoup
+    if not html.strip():
+        return html
+    soup = BeautifulSoup(html, 'html.parser')
+    return str(soup)
+
+
 def _parse_json(raw: str) -> dict:
+    """AI 응답 JSON 파싱. 잘린 응답 3단계 복구 시도:
+      1단계: 그대로 파싱
+      2단계: 마지막 완전한 문자열 필드까지 잘라서 닫기
+      3단계: html_content 필드가 있으면 태그 자동 닫기 후 재조립
+    """
     clean = re.sub(r'^```(?:json)?\s*', '', raw.strip())
     clean = re.sub(r'\s*```$', '', clean).strip()
     # JSON 블록만 추출
@@ -285,19 +302,62 @@ def _parse_json(raw: str) -> dict:
     end = clean.rfind('}')
     if start != -1 and end != -1:
         clean = clean[start:end+1]
+
+    # ── 1단계: 직접 파싱 ──────────────────────────────────────────
     try:
         return json.loads(clean)
     except json.JSONDecodeError as e:
-        # 잘린 JSON 복구 시도: 마지막 완전한 필드까지만 파싱
-        logger.warning(f'JSON 파싱 오류 ({e}) — 응답이 잘렸을 수 있음. 복구 시도...')
-        # 마지막 완전한 string 값 뒤 truncate 후 닫기 시도
-        fixed = clean[:clean.rfind('"')]
-        fixed = re.sub(r',\s*$', '', fixed.rstrip()) + '}'
-        try:
-            return json.loads(fixed + '}')
-        except Exception:
-            pass
-        raise RuntimeError(f'JSON 파싱 실패 (응답 {len(raw)}자): {e}')
+        logger.warning(f'JSON 파싱 오류 ({e}) — 응답이 잘렸을 수 있음. 복구 시도 1/2...')
+
+    # ── 2단계: 마지막 완전한 문자열 필드까지 잘라서 닫기 ──────────
+    # html_content가 중간에 잘린 경우: 마지막 닫힌 </p> 또는 </li> 뒤를 기준
+    truncate_patterns = [r'</p>\s*"', r'</li>\s*"', r'</h[1-6]>\s*"', r'"']
+    for pat in truncate_patterns:
+        m = None
+        for mm in re.finditer(pat, clean):
+            m = mm  # 마지막 매치
+        if m:
+            candidate = clean[:m.start() + (len(m.group()) - 1)]  # " 직전까지
+            # 열린 string 값 닫기 + JSON object 닫기
+            candidate = re.sub(r',\s*$', '', candidate.rstrip())
+            for suffix in ['"}', '"]}', '"}]', '"}}']:
+                try:
+                    result = json.loads(candidate + suffix)
+                    logger.warning(f'JSON 2단계 복구 성공 (suffix: {suffix!r})')
+                    # html_content 태그 정리
+                    if 'html_content' in result:
+                        result['html_content'] = _close_html_tags(result['html_content'])
+                    return result
+                except json.JSONDecodeError:
+                    continue
+
+    # ── 3단계: 부분 파싱 — 열린 string 포함 허용 ────────────────
+    logger.warning('JSON 3단계 복구 시도 — 부분 필드 추출...')
+    partial = {}
+    for field in ('title', 'meta_description', 'html_content', 'tags', 'image_query'):
+        # 1) 완전히 닫힌 string 값 추출 시도
+        closed_pat = rf'"{field}"\s*:\s*"((?:[^"\\]|\\.)*)"'
+        m = re.search(closed_pat, clean, re.DOTALL)
+        if m:
+            partial[field] = m.group(1).replace('\\"', '"').replace('\\n', '\n')
+            continue
+        # 2) 열린(잘린) string 값 — 필드 선언 이후 끝까지 추출
+        if field == 'html_content':
+            open_pat = rf'"{field}"\s*:\s*"(.*)'
+            m2 = re.search(open_pat, clean, re.DOTALL)
+            if m2:
+                # 잘린 HTML 값 → 언이스케이프 후 태그 닫기
+                partial[field] = _close_html_tags(
+                    m2.group(1).replace('\\"', '"').replace('\\n', '\n')
+                )
+
+    if partial.get('html_content'):
+        partial.setdefault('title', '')
+        partial.setdefault('meta_description', '')
+        logger.warning(f'JSON 3단계 부분 복구 성공: {list(partial.keys())}')
+        return partial
+
+    raise RuntimeError(f'JSON 파싱 실패 (응답 {len(raw)}자): 3단계 모두 실패')
 
 
 # ─────────────────────────────────────────
@@ -332,20 +392,56 @@ def _assert_english_only(post_data: dict) -> None:
 # ─────────────────────────────────────────
 
 def _sanitize_year(post_data: dict) -> dict:
-    """생성된 본문에 과거 연도가 있으면 현재 연도로 강제 교체"""
+    """제목/메타 연도 교정 + 본문 참조 연도(title 끝 / 발행 컨텍스트)만 교정.
+
+    v1 문제: html_content 전체 치환 → 역사적 사실 날짜 오염
+      예) "SECURE 2.0 was signed in 2022" → "...in 2026"
+          "Medicare Part D started in 2006" → "...in 2026"
+
+    v2 수정:
+      - title / meta_description: 과거 연도 전체 교정 (제목에 올드 연도 금지)
+      - html_content: '발행 컨텍스트 연도'만 교정
+            패턴 A: 제목 수준 참조 — "in {PAST_YEAR}" 이 문장 마지막 단어이거나
+                    heading 태그 안에 있는 경우
+            패턴 B: "as of {PAST_YEAR}" / "in {PAST_YEAR}," 형태
+        역사적 날짜는 건드리지 않음 (예: "signed in 2022", "established in 2006")
+    """
     from datetime import datetime
     current_year = str(datetime.now().year)
-    fields = ['title', 'html_content', 'meta_description']
-    for field in fields:
+    current_int  = int(current_year)
+
+    # ── 1) title / meta: 전체 과거 연도 교정 ─────────────────────────
+    for field in ('title', 'meta_description'):
         text = post_data.get(field, '')
         if not text:
             continue
         original = text
-        for past_year in range(2020, int(current_year)):
+        for past_year in range(2020, current_int):
             text = text.replace(str(past_year), current_year)
         if text != original:
-            logger.warning(f'[YEAR SANITIZE] {field}에서 과거 연도 발견 → {current_year}로 교정')
+            logger.warning(f'[YEAR SANITIZE] {field}: 과거 연도 → {current_year}')
         post_data[field] = text
+
+    # ── 2) html_content: h1/h2 heading 태그 안 연도만 교정 ──────────
+    # 본문 body 텍스트는 건드리지 않음 — 역사적 사실 날짜 보존
+    # (예: "SECURE 2.0 was signed in 2022", "Medicare started in 2006")
+    html = post_data.get('html_content', '')
+    if not html:
+        return post_data
+
+    original_html = html
+    for past_year in range(2020, current_int):
+        py = str(past_year)
+        # heading 태그(<h1>/<h2>) 내부 연도만 교정 — <h3> 이하는 보존
+        html = re.sub(
+            rf'(<h[12][^>]*>[^<]{{0,150}}){py}([^<]{{0,50}}<\/h[12]>)',
+            lambda m, cy=current_year: m.group(1) + cy + m.group(2),
+            html,
+        )
+
+    if html != original_html:
+        logger.warning('[YEAR SANITIZE] html_content: heading 연도 교정')
+    post_data['html_content'] = html
     return post_data
 
 
@@ -438,7 +534,10 @@ def generate_post(category_key: str = None) -> dict:
     keywords = get_keywords_for_category(category_key, n=4)
     primary_keyword = keywords[0]
     supporting_keywords = keywords[1:]
-    hook = get_hook_for_category(category_key)
+    # 30일 쿨다운 앵글 제외하여 선택
+    used_angles = get_used_hook_angles()
+    hook = get_hook_for_category(category_key, used_angles=used_angles)
+    logger.info(f'Hook Angle: "{hook["hook_angle"]}" (쿨다운 제외: {len(used_angles)}개)')
 
     # 웹 리서치 (Tavily) — 최신 데이터 수집
     logger.info(f'[RESEARCH] 웹 리서치 중: "{primary_keyword}"')
@@ -485,8 +584,9 @@ def generate_post(category_key: str = None) -> dict:
 
     if not post_data:
         raise RuntimeError('콘텐츠 생성 실패: 3회 모두 실패')
-    post_data['category_key'] = category_key
-    post_data['category_info'] = category_info
+    post_data['category_key']   = category_key
+    post_data['category_info']  = category_info
     post_data['primary_keyword'] = primary_keyword
+    post_data['_hook']          = hook   # auto_publish가 이력 기록에 사용
 
     return post_data

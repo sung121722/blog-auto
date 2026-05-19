@@ -343,22 +343,45 @@ HOOK_ANGLES = {
 }
 
 
-def get_hook_for_category(category_key: str) -> dict:
+def get_hook_for_category(category_key: str, used_angles: set = None) -> dict:
     """카테고리에 맞는 Hook Type + Angle 반환.
-    카테고리별 우선순위 상위 2개 중 랜덤 선택 → 항상 주제에 맞는 angle 보장."""
+
+    카테고리별 우선순위 상위 2개 중 랜덤 선택 → 항상 주제에 맞는 angle 보장.
+    used_angles 전달 시 30일 쿨다운 내 앵글 제외 → 앵글 소진 방지.
+    모든 앵글이 쿨다운 중이면 가장 오래전에 쓴 앵글 선택(최소 반복 보장).
+    """
+    if used_angles is None:
+        used_angles = set()
+
     type_priority = HOOK_TYPES.get(category_key, ['pain_point', 'misconception'])
-    hook_type = random.choice(type_priority[:2])
-    cat_angles = HOOK_ANGLES.get(category_key, {})
-    angle_pool = cat_angles.get(hook_type, [])
-    # 폴백: 해당 카테고리에 선택된 타입 angle이 없으면 다른 타입으로 대체
+    cat_angles    = HOOK_ANGLES.get(category_key, {})
+
+    def _fresh_pool(h_type: str) -> list:
+        pool = cat_angles.get(h_type, [])
+        fresh = [a for a in pool if a not in used_angles]
+        return fresh if fresh else pool  # 모두 소진 시 전체 풀 허용
+
+    # 우선순위 상위 2개 타입 중 fresh angle이 있는 타입 우선 선택
+    hook_type  = None
+    angle_pool = []
+    for h_type in type_priority[:2]:
+        pool = _fresh_pool(h_type)
+        if pool:
+            hook_type  = h_type
+            angle_pool = pool
+            break
+
+    # 모든 우선 타입 소진 → 전체 타입 순회
     if not angle_pool:
-        for fallback_type in type_priority:
-            angle_pool = cat_angles.get(fallback_type, [])
-            if angle_pool:
-                hook_type = fallback_type
+        for h_type in type_priority:
+            pool = _fresh_pool(h_type)
+            if pool:
+                hook_type  = h_type
+                angle_pool = pool
                 break
+
     hook_angle = random.choice(angle_pool) if angle_pool else ''
-    return {'hook_type': hook_type, 'hook_angle': hook_angle}
+    return {'hook_type': hook_type or 'pain_point', 'hook_angle': hook_angle}
 
 
 PUBLISH_LABELS_BASE = ["Senior Life", "Baby Boomers", "Healthy After 50"]
