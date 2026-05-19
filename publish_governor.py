@@ -265,13 +265,21 @@ def run(article: dict) -> dict:
     hard_checks.append('TITLE_HTML: PASS')
 
     # ═══════════════════════════════════════════════════════
-    # HARD CHECK 2 — 최소 단어수 (900)
+    # HARD CHECK 2 — 최소 단어수 (카테고리별)
+    #   A/B : HARD 900 / SOFT 1,400
+    #   C/D : HARD 750 / SOFT 1,100
     # ═══════════════════════════════════════════════════════
+    category_key  = article.get('category_key', '').upper()
+    _is_cd        = category_key in ('C', 'D')
+    hard_min_wc   = 750  if _is_cd else 900
+    soft_min_wc   = 1100 if _is_cd else 1400
+    soft_range_lbl = '1,100-1,400' if _is_cd else '1,400-1,800'
+
     wc = _word_count(html)
-    logger.info(f'[GOVERNOR] 단어수: {wc}')
-    if wc < 900:
+    logger.info(f'[GOVERNOR] 단어수: {wc} (카테고리: {category_key or "unknown"})')
+    if wc < hard_min_wc:
         raise PublishBlocked(
-            f'[HARD] 단어수 {wc} < 900 (JSON 잘림 의심) — 재생성 필요'
+            f'[HARD] 단어수 {wc} < {hard_min_wc} (JSON 잘림 의심) — 재생성 필요'
         )
     hard_checks.append(f'MIN_WORDS({wc}): PASS')
 
@@ -304,10 +312,10 @@ def run(article: dict) -> dict:
     hard_checks.append('FACTUAL_ERRORS: PASS')
 
     # ═══════════════════════════════════════════════════════
-    # SOFT CHECK 1 — 목표 단어수 미달 (1,400)
+    # SOFT CHECK 1 — 목표 단어수 미달 (카테고리별)
     # ═══════════════════════════════════════════════════════
-    if wc < 1400:
-        msg = f'[SOFT] 단어수 {wc} < 1,400 (목표 범위 1,400-1,800) — 발행은 되지만 확인 권장'
+    if wc < soft_min_wc:
+        msg = f'[SOFT] 단어수 {wc} < {soft_min_wc:,} (목표 범위 {soft_range_lbl}) — 발행은 되지만 확인 권장'
         logger.warning(msg)
         warnings.append(msg)
 

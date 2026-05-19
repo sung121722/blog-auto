@@ -1,5 +1,6 @@
 # 네이버 블로그 자동 발행 (Playwright)
 playwright>=1.44.0
+pyperclip
 pytrends
 google-api-python-client
 google-auth-oauthlib
