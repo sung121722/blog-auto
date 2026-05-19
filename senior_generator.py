@@ -231,6 +231,18 @@ def build_user_prompt(category_key, category_info, primary_keyword,
                       word_target: str = '1,400-1,800 words',
                       deep_dive: str = '850-1,000 words') -> str:
     sup_kw = '\n'.join(f'  - {kw}' for kw in supporting_keywords)
+
+    # 카테고리 C (Aging in Place): 제품 가격 범위 명시 지시
+    # 샤워 의자, 안전 손잡이, 경사로 등 실제 구매가 포함된 주제
+    if category_key == 'C':
+        price_instruction = (
+            'REQUIRED: This category covers products people actually buy. '
+            'Include realistic price ranges (e.g., "Basic models start around $35, '
+            'while bariatric-rated options run $150-$300"). '
+            'Do NOT use vague language like "affordable" or "expensive" — give actual dollar ranges.\n  '
+        )
+    else:
+        price_instruction = ''
     research_block = ''
     if research_context:
         research_block = f"""
@@ -267,7 +279,7 @@ DEEP DIVE (Part 3 — {deep_dive}):
 - First <h2> must include the primary keyword "{primary_keyword}".
 - Break into 2-4 sub-sections with <h2> tags.
 - Include specific dollar amounts, age thresholds, or percentages (from research context if available — otherwise use general framing only).
-- One concrete scenario written naturally (NOT "Meet Linda, 62..." — write it as "Take someone who worked as...").
+  {price_instruction}- One concrete scenario written naturally (NOT "Meet Linda, 62..." — write it as "Take someone who worked as...").
 - At least one "Most people assume..." correction.
 - Supporting keywords woven in naturally.
 
@@ -508,11 +520,14 @@ def _assert_min_words(post_data: dict, min_words: int = 900) -> None:
 # ─────────────────────────────────────────
 
 # HARD: 순수 AI 특유 표현 → 감지 시 RuntimeError → 재시도
+# Gemini가 Claude보다 자주 쓰는 표현도 포함 (실측 기반)
 BANNED_HARD = {
     'crucial', 'delve', 'seamlessly', 'embark', 'game-changer',
     'game changer', 'transformative', 'holistic', 'robust',
     'cutting-edge', 'cutting edge', 'going forward', 'journey',
     'dive into', 'unpack', 'look no further',
+    # Gemini 추가 패턴 — 시스템 프롬프트에 이미 금지되었으나 Gemini가 무시하는 단어
+    'empower', 'proactive', 'leverage',
 }
 
 # SOFT: 자연스러운 영어에도 등장 → 경고 로그만 남기고 통과
