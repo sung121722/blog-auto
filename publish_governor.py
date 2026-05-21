@@ -155,6 +155,34 @@ _FACTUAL_ERROR_PATTERNS = [
         ),
         'IRA contribution limit stated as $6,000 — 2024+ limit is $7,000 ($8,000 age 50+)'
     ),
+
+    # ── 5. Medicare Part D Coverage Gap (Donut Hole) ─────────────
+    # IRA 2022 기준: 2025년부터 coverage gap 완전 폐지.
+    # 2025+에서 모든 Part D 가입자는 연간 본인부담 $2,000 상한 적용.
+    #
+    # BAD: "coverage gap kicks in" / "you hit the coverage gap"
+    #      "fall into the coverage gap" / "enter the coverage gap"
+    # OK:  "coverage gap was eliminated" / "before 2025, the coverage gap"
+    #      "Extra Help protects against the old coverage gap"
+    (
+        re.compile(
+            r'\b(?:coverage|spending)\s+gap\b.{0,80}'
+            r'\b(?:kicks?\s+in|you\b.{0,15}\b(?:hit|reach|enter)\b'
+            r'|fall(?:s|ing)?\s+into|still\s+(?:exists?|applies?|has))\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Coverage gap (donut hole) stated as active — eliminated Jan 1 2025 (IRA 2022). '
+        'In 2025+, Part D has a $2,000 annual OOP cap with no gap phase.'
+    ),
+    (
+        # "coverage gap where you pay more" / "coverage gap costs you"
+        re.compile(
+            r'\b(?:coverage|spending)\s+gap\s+(?:where|that|which)\b.{0,60}'
+            r'\b(?:pay(?:ing)?|cost(?:ing)?|owe)\b.{0,30}\b(?:more|out.of.pocket)\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Coverage gap described as a current cost burden — gap was eliminated Jan 1 2025.'
+    ),
 ]
 
 

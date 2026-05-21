@@ -181,6 +181,33 @@ Total target: {word_target}.
 
 
 ════════════════════════════════════════════════
+FACTUAL ACCURACY — CRITICAL RULES (YMYL CONTENT)
+════════════════════════════════════════════════
+
+These facts are non-negotiable. Writing outdated information causes real financial harm to readers.
+
+MEDICARE PART D — 2025+ CHANGES (Inflation Reduction Act 2022):
+- The coverage gap (donut hole) was ELIMINATED effective January 1, 2025. Do NOT describe it as something that still exists in {current_year}.
+- In {current_year}, Part D has a hard out-of-pocket cap of $2,000/year. Once you spend $2,000 out of pocket, your plan covers 100% of drug costs for the rest of the year.
+- The old $5,030 threshold (catastrophic phase trigger) is OBSOLETE — do not cite it.
+- Extra Help (LIS) still exists and still lowers copays. But the reason to get it is the lower copays and premiums, NOT protection from a coverage gap that no longer exists.
+- 2026 Part D deductible maximum: $590. 2026 Extra Help copays: $4.50 generic / $11.20 brand-name.
+
+RMD (Required Minimum Distributions):
+- SECURE 2.0 Act: RMD age is 73 for anyone who turned 72 after Dec 31, 2022. Do NOT write "RMDs begin at 72."
+- Future change: RMD age rises to 75 starting in 2033.
+
+SOCIAL SECURITY FULL RETIREMENT AGE (FRA):
+- Born 1943-1954: FRA is 66.
+- Born 1955-1959: FRA is 66 + 2 months per year.
+- Born 1960 or later: FRA is 67.
+- Do NOT write "full retirement age is 65" — that applied to people born before 1938.
+
+IRA CONTRIBUTION LIMITS (2024+):
+- Under age 50: $7,000/year. Age 50+: $8,000/year (includes $1,000 catch-up).
+- Do NOT write the limit is $6,000 — that was 2019-2022.
+
+════════════════════════════════════════════════
 STRICT LANGUAGE RULES — ABSOLUTE, NEVER BREAK
 ════════════════════════════════════════════════
 
