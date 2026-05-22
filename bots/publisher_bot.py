@@ -341,35 +341,25 @@ CTA_BLOCKS = {
 
 def build_cta_html(category_key: str) -> str:
     """카테고리별 리드젠 CTA 블록 생성.
-    더미 링크(example.com/pending)도 비활성 상태로 출력 — 레이아웃 확인 + 링크 교체 즉시 활성화."""
+    실제 링크가 설정된 경우에만 출력 — 미설정/더미 링크면 빈 문자열 반환."""
     cta = CTA_BLOCKS.get(category_key)
     if not cta:
         return ''
     link = os.getenv(cta['link_env'], '')
-    if not link or link.startswith('https://YOUR_'):
+    # 링크 없거나 플레이스홀더면 CTA 블록 자체를 출력하지 않음 (미완성 블로그 인상 방지)
+    if not link or link.startswith('https://YOUR_') or 'example.com' in link:
         return ''
-    is_pending = 'example.com/pending' in link or not link
-    if is_pending:
-        btn_style = (
-            'background-color:#adb5bd;color:white;padding:16px 32px;'
-            'text-decoration:none;font-size:18px;font-weight:bold;border-radius:8px;'
-            'display:inline-block;opacity:0.6;cursor:not-allowed;pointer-events:none;'
-        )
-        pending_note = '<p style="font-size:12px;color:#999;margin-top:8px;">(Link coming soon)</p>'
-    else:
-        btn_style = (
-            'background-color:#0056b3;color:white;padding:16px 32px;'
-            'text-decoration:none;font-size:18px;font-weight:bold;border-radius:8px;'
-            'display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.1);'
-        )
-        pending_note = ''
+    btn_style = (
+        'background-color:#0056b3;color:white;padding:16px 32px;'
+        'text-decoration:none;font-size:18px;font-weight:bold;border-radius:8px;'
+        'display:inline-block;box-shadow:0 4px 6px rgba(0,0,0,0.1);'
+    )
     return (
         '<div style="text-align:center;margin:35px 0;padding:20px;'
         'background-color:#f8f9fa;border:1px solid #e9ecef;border-radius:10px;">'
         f'<h3 style="margin-top:0;color:#333;">{cta["headline"]}</h3>'
         f'<p style="color:#555;font-size:16px;margin-bottom:20px;">{cta["subtext"]}</p>'
         f'<a href="{link}" style="{btn_style}">{cta["button"]}</a>'
-        f'{pending_note}'
         '</div>'
     )
 
