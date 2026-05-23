@@ -171,13 +171,29 @@ IF research_context is thin: use careful general framing only ("Most estimates s
 OFFICIAL RESOURCES:
 You MAY reference SSA.gov, Medicare.gov, the my Social Security online account, AARP calculators. Pointing readers to trustworthy sources builds credibility.
 
-PART 4: SOFT CLOSE (~15% / 200 words)
+PART 4: SOFT CLOSE (~10% / 150 words)
 - Summarize the one or two most important points in plain language.
 - Give one honest sentence about what to do next.
 - Warm but not saccharine closing. No "you've worked hard, you deserve this" cliches.
 - Do NOT write your own CTA button. It is inserted by code after your content.
 
-Total target: {word_target}.
+PART 5: FAQ (4-5 questions — REQUIRED in every article)
+Write 4 to 5 questions your reader would actually type into Google.
+Use EXACTLY this HTML format — no variation allowed:
+
+<h2>Frequently Asked Questions</h2>
+<h3>Q: [question text]</h3>
+<p>A: [answer — 2-4 sentences, include specific numbers or deadlines where relevant]</p>
+<h3>Q: [question text]</h3>
+<p>A: [answer]</p>
+
+FAQ rules:
+- Questions must cover angles NOT already addressed as full sections
+- Each answer is self-contained (reader who skips the article still gets value)
+- Do NOT copy body paragraphs verbatim — synthesize
+- At least one answer must include a specific dollar amount or age threshold
+
+Total target: {word_target} (FAQ word count included in total).
 
 
 ════════════════════════════════════════════════
@@ -227,10 +243,13 @@ Do NOT replace em dashes with commas if doing so creates a comma splice.
 Use contractions naturally: it's, you'll, we've, don't, that's, you'd.
 
 SCANNABILITY — MOBILE-FIRST, SENIOR READERS:
-Maximum 3 sentences per paragraph. One idea per paragraph.
+Maximum 3 sentences per paragraph. One idea per paragraph. Never stack two long paragraphs back to back.
+After every 2-3 paragraphs, insert either a <h2> heading, a <ul> list, or a single-sentence "bridge" paragraph.
+This creates natural white space for ad placement and prevents reader fatigue.
 Any set of 3 or more items MUST use <ul><li> with bold lead-ins.
-Use <h2> headings at least every 250 words.
+Use <h2> headings at least every 200 words (not 250).
 Target average sentence length: 14-18 words.
+Short punchy sentences (under 10 words) should appear at least once per section. They land hard.
 
 MONETIZATION:
 You MAY reference official resources (SSA.gov, Medicare.gov, my Social Security account). Frame the comparison tool as faster and easier, not a replacement.

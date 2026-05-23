@@ -155,7 +155,7 @@ def add_image_alt_tags(html: str, title: str, tags: list) -> str:
 
 
 def add_internal_links(category_key: str = None) -> str:
-    """카테고리 사일로 내부링크 — 동일 카테고리 글 중 1개를 '📖 연관 추천 칼럼' 박스로 반환.
+    """카테고리 사일로 내부링크 — 동일 카테고리 글 최대 3개를 Related Posts 박스로 반환.
     타 카테고리 보충 없음 (사일로 철저 준수). 발행 글 없으면 빈 문자열 반환."""
     import random as _random
     published_dir = DATA_DIR / 'published'
@@ -175,26 +175,64 @@ def add_internal_links(category_key: str = None) -> str:
         rec = _load(p)
         if not rec:
             continue
-        url = rec.get('url', '')
-        title = rec.get('title', '')
-        if url and title and rec.get('category_key') == category_key:
+        if rec.get('url') and rec.get('title') and rec.get('category_key') == category_key:
             same_cat.append(rec)
 
     if not same_cat:
         return ''
 
-    picked = _random.choice(same_cat)
+    # 최대 3개 무작위 선택
+    picked = _random.sample(same_cat, min(3, len(same_cat)))
+
+    items_html = ''.join(
+        f'<li style="margin-bottom:8px;">'
+        f'<a href="{r["url"]}" rel="bookmark" '
+        f'style="color:#1d4ed8;text-decoration:underline;font-size:15px;">'
+        f'{r["title"]}</a>'
+        f'</li>'
+        for r in picked
+    )
     return (
-        '<div style="margin:28px 0;padding:16px 20px;'
-        'background:#f0f7ff;border-left:4px solid #3b82f6;border-radius:6px;">'
-        '<p style="margin:0;font-size:15px;color:#333;line-height:1.6;">'
-        '📖 <strong>Related Read:</strong>&nbsp;'
-        f'<a href="{picked["url"]}" rel="bookmark" '
-        'style="color:#1d4ed8;text-decoration:underline;">'
-        f'{picked["title"]}</a>'
-        '</p>'
+        '<div style="margin:32px 0;padding:20px 24px;'
+        'background:#f0f7ff;border-left:4px solid #3b82f6;border-radius:8px;">'
+        '<p style="margin:0 0 12px;font-size:14px;font-weight:bold;'
+        'color:#1e40af;text-transform:uppercase;letter-spacing:.05em;">📖 Keep Reading</p>'
+        f'<ul style="margin:0;padding-left:18px;">{items_html}</ul>'
         '</div>'
     )
+
+
+def build_toc(html: str) -> str:
+    """본문 H2 태그로 목차(TOC) 생성 + 각 H2에 id 앵커 삽입.
+    H2가 3개 미만이면 빈 문자열 반환 (짧은 글엔 목차 불필요)."""
+    import re as _re
+    soup = BeautifulSoup(html, 'html.parser')
+    h2_tags = soup.find_all('h2')
+    if len(h2_tags) < 3:
+        return '', html  # (toc_html, body_html)
+
+    items = []
+    for i, tag in enumerate(h2_tags):
+        slug = _re.sub(r'[^a-z0-9]+', '-', tag.get_text().lower()).strip('-')
+        anchor_id = f'toc-{i+1}-{slug[:40]}'
+        tag['id'] = anchor_id
+        items.append((anchor_id, tag.get_text()))
+
+    li_html = ''.join(
+        f'<li style="margin-bottom:6px;">'
+        f'<a href="#{aid}" style="color:#1d4ed8;text-decoration:none;font-size:14px;">'
+        f'{text}</a></li>'
+        for aid, text in items
+    )
+    toc = (
+        '<nav style="margin:0 0 28px;padding:18px 22px;'
+        'background:#f8f9fa;border:1px solid #e2e8f0;border-radius:8px;">'
+        '<p style="margin:0 0 10px;font-size:13px;font-weight:bold;'
+        'color:#374151;text-transform:uppercase;letter-spacing:.06em;">In This Article</p>'
+        f'<ul style="margin:0;padding-left:18px;list-style:disc;">{li_html}</ul>'
+        '</nav>'
+    )
+    return toc, str(soup)  # 앵커 id가 추가된 body도 반환
 
 
 def add_reading_time(html: str) -> str:
@@ -240,13 +278,46 @@ def add_faq_schema(article: dict, faq_items: list) -> str:
 
 
 def parse_faq_from_body(body_html: str) -> list:
-    """본문 HTML에서 FAQ 섹션 파싱 (---FAQ--- 마커 또는 마지막 섹션)"""
-    import re
+    """본문 HTML에서 FAQ 섹션 파싱.
+    지원 패턴:
+      1. <h3>Q: ...</h3><p>A: ...</p>   ← 시스템 프롬프트 지정 포맷
+      2. <div class="faq-item">...      ← 대안 포맷
+      3. <strong>Q: ...</strong>...     ← 레거시 포맷
+    """
+    import re as _re
+    soup = BeautifulSoup(body_html, 'html.parser')
     faq_items = []
-    # Q: / A: 패턴 찾기
-    qa_pattern = re.findall(r'<strong>Q[:\.]?\s*(.+?)</strong>\s*<[^>]+>\s*A[:\.]?\s*(.+?)</[^>]+>', body_html, re.DOTALL)
-    for q, a in qa_pattern[:5]:
-        faq_items.append({'q': re.sub(r'<[^>]+>', '', q).strip(), 'a': re.sub(r'<[^>]+>', '', a).strip()})
+
+    # 패턴 1: <h3>Q: ...</h3> + 다음 <p>
+    for h3 in soup.find_all('h3'):
+        text = h3.get_text(strip=True)
+        if not _re.match(r'^Q[:\.]?\s*', text, _re.IGNORECASE):
+            continue
+        q_text = _re.sub(r'^Q[:\.]?\s*', '', text, flags=_re.IGNORECASE).strip()
+        # 바로 다음 sibling p 또는 div 찾기
+        nxt = h3.find_next_sibling(['p', 'div'])
+        if not nxt:
+            continue
+        a_raw = nxt.get_text(strip=True)
+        a_text = _re.sub(r'^A[:\.]?\s*', '', a_raw, flags=_re.IGNORECASE).strip()
+        if q_text and a_text:
+            faq_items.append({'q': q_text, 'a': a_text})
+        if len(faq_items) >= 6:
+            break
+
+    # 패턴 3: 레거시 <strong>Q:...</strong> (패턴 1 미발견 시)
+    if not faq_items:
+        for m in _re.finditer(
+            r'<strong>Q[:\.]?\s*(.+?)</strong>\s*<[^>]+>\s*A[:\.]?\s*(.+?)</[^>]+>',
+            body_html, _re.DOTALL
+        ):
+            q = _re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            a = _re.sub(r'<[^>]+>', '', m.group(2)).strip()
+            if q and a:
+                faq_items.append({'q': q, 'a': a})
+            if len(faq_items) >= 6:
+                break
+
     return faq_items
 
 
@@ -376,8 +447,15 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
     # JSON-LD script는 Blogger API가 보안상 거부 → 제외
     html_parts = []
     if toc_html:
-        html_parts.append(f'<div class="toc-wrapper">{toc_html}</div>')
+        html_parts.append(toc_html)
     html_parts.append(body_html)
+
+    # FAQ Schema.org JSON-LD (FAQPage 스니펫 — Google 검색 노출용)
+    faq_items = parse_faq_from_body(body_html)
+    faq_schema = add_faq_schema(article, faq_items)
+    if faq_schema:
+        html_parts.append(faq_schema)
+        logger.info(f'[SEO] FAQ Schema 삽입: {len(faq_items)}개 Q&A')
     if disclaimer:
         html_parts.append(f'<hr/><p class="disclaimer"><small>{disclaimer}</small></p>')
 
@@ -607,15 +685,22 @@ def publish(article: dict) -> bool:
     if article.get('_html_content'):
         body_html = article['_html_content']
     else:
-        body_html, toc_html = markdown_to_html(article.get('body', ''))
-        toc_html = ''
+        body_html, _ = markdown_to_html(article.get('body', ''))
 
     # SEO 처리
     body_html = add_image_alt_tags(body_html, article.get('title', ''), tags_list)
     body_html = add_reading_time(body_html)
     body_html = insert_adsense_placeholders(body_html)
+
+    # TOC 생성 (H2 3개 이상 글에만)
+    toc_result = build_toc(body_html)
+    if isinstance(toc_result, tuple):
+        toc_html, body_html = toc_result  # H2에 id 앵커도 함께 적용
+    else:
+        toc_html = ''
+
     # 내부링크는 build_full_html() 내부에서 CTA 아래에 삽입 (카테고리 사일로)
-    full_html = build_full_html(article, body_html, '')
+    full_html = build_full_html(article, body_html, toc_html)
 
     # src/href 속성 내 &amp; → & 복원 (Blogger API가 &amp; 포함 URL을 400으로 거부)
     import re as _re
