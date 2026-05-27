@@ -1,9 +1,10 @@
 """
 fix_ira_divorce_post.py
 "How to Split an IRA in Divorce After Retirement Without Taxes" 글 수정
-개인참조 2회 → 1회 (두 번째 "In one case I saw" 제거)
+1. "In one case I saw" → "In one documented case" (개인참조 2회 → 1회)
+2. Keep Reading 섹션 추가 (동일 카테고리 B 글 3개)
 """
-import sys, re
+import sys, re, json, random
 sys.path.insert(0, '.')
 sys.path.insert(0, 'bots')
 sys.stdout.reconfigure(encoding='utf-8')
@@ -12,132 +13,100 @@ from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=Path('.env'))
 
-from bots.publisher_bot import get_google_credentials
+from bots.publisher_bot import get_google_credentials, add_internal_links
 from googleapiclient.discovery import build
 from bs4 import BeautifulSoup
 import os
 
 BLOG_ID = os.getenv('BLOG_MAIN_ID', '')
+TARGET_TITLE = 'How to Split an IRA in Divorce After Retirement Without Taxes'
 
-# ── 1. 제목으로 글 검색 ─────────────────────────────────────────
+# ── 1. 글 찾기 ────────────────────────────────────────────────
 creds   = get_google_credentials()
 service = build('blogger', 'v3', credentials=creds)
 
-TARGET_TITLE = 'How to Split an IRA in Divorce After Retirement Without Taxes'
-
 print(f'검색 중: "{TARGET_TITLE}"')
 
-# Blogger search API
 results = service.posts().search(
     blogId=BLOG_ID,
-    q='IRA Divorce Retirement Taxes',
+    q='IRA Divorce Retirement Split Taxes',
     fetchBodies=False,
 ).execute()
 
 post_id = None
 for item in results.get('items', []):
-    if TARGET_TITLE.lower() in item.get('title', '').lower():
+    if 'ira' in item.get('title', '').lower() and 'divorce' in item.get('title', '').lower():
         post_id = item['id']
         print(f'✅ 발견: [{item["id"]}] {item["title"]}')
         break
 
 if not post_id:
-    print('글을 찾지 못했습니다. 수동으로 POST_ID를 입력하세요.')
-    print('사용법: POST_ID = "여기에ID입력" 로 수정 후 재실행')
+    print('글을 찾지 못했습니다.')
     sys.exit(1)
 
-# ── 2. 본문 가져오기 ───────────────────────────────────────────
+# ── 2. 본문 가져오기 ──────────────────────────────────────────
 post    = service.posts().get(blogId=BLOG_ID, postId=post_id, view='AUTHOR').execute()
 title   = post['title']
 content = post['content']
-
 print(f'\n제목: {title}')
 print(f'본문 길이: {len(content)} chars')
 
-# ── 3. 개인참조 탐지 ──────────────────────────────────────────
-PERSONAL_RE = re.compile(
-    r'\b(i\s+watched|i\s+saw|i\s+know|i\s+once|i\s+always|i\s+remember'
-    r'|i\s+tried|i\s+learned|i\'ve|i\s+retired|when\s+i\s|i\s+helped'
-    r'|i\s+spent|i\s+worked|i\'ve\s+sat)\b',
-    re.IGNORECASE
-)
+soup = BeautifulSoup(content, 'html.parser')
+plain = soup.get_text()
 
-text = BeautifulSoup(content, 'html.parser').get_text()
-matches = [(m.start(), m.group(), text[max(0,m.start()-60):m.end()+80]) for m in PERSONAL_RE.finditer(text)]
+# ── 3. 버그 진단 ──────────────────────────────────────────────
+ISAWRE = re.compile(r'\bIn one case I saw\b', re.IGNORECASE)
+isawm  = ISAWRE.findall(plain)
+print(f'\n[BUG1] "In one case I saw": {len(isawm)}건')
 
-print(f'\n개인참조 표현 {len(matches)}곳:')
-for pos, phrase, ctx in matches:
-    print(f'  [{phrase}] ...{ctx.strip()}...')
-    print()
+# Keep Reading 섹션 존재 여부
+has_keep_reading = '📖 Keep Reading' in plain or 'Keep Reading' in plain
+print(f'[BUG2] Keep Reading 섹션: {"있음 ✅" if has_keep_reading else "없음 ❌"}')
 
-if len(matches) <= 1:
-    print('✅ 개인참조 1회 이하 — 수정 불필요')
+if not isawm and has_keep_reading:
+    print('\n✅ 수정할 버그 없음')
     sys.exit(0)
 
-# ── 4. 자동 수정 ──────────────────────────────────────────────
-def auto_fix(html: str) -> str:
-    """
-    두 번째 이후 개인참조 → 무인칭/3인칭으로 교체.
-    첫 번째("I watched a colleague at 67")만 유지.
-    """
-    soup = BeautifulSoup(html, 'html.parser')
+fixes_applied = []
 
-    replacements = [
-        # 두 번째 개인참조: "In one case I saw" → "In one documented case"
-        (re.compile(r'\bIn one case I saw\b', re.IGNORECASE),
-         'In one documented case'),
-        # "I saw that" 형태
-        (re.compile(r'\b(when I saw|as I saw)\b', re.IGNORECASE),
-         'as reported'),
-        # 혹시 남아있을 "I know" 형태
-        (re.compile(r'\bI know\b', re.IGNORECASE),
-         'You probably know'),
-        # "I've seen" (첫 번째 "I watched" 이후에만 발동)
-        (re.compile(r"\bI've seen\b", re.IGNORECASE),
-         'Many advisors have seen'),
-    ]
-
-    first_kept = False  # 첫 번째 개인참조("I watched") 보존 플래그
-
+# ── 4. BUG1 수정: "In one case I saw" → 무인칭 ────────────────
+if isawm:
     for tag in soup.find_all(string=True):
         raw = str(tag)
-        if not raw.strip():
-            continue
+        if ISAWRE.search(raw):
+            fixed = ISAWRE.sub('In one documented case', raw)
+            tag.replace_with(BeautifulSoup(fixed, 'html.parser'))
+            print(f'  [BUG1 수정] "In one case I saw" → "In one documented case"')
+    fixes_applied.append('개인참조 2번째 제거')
 
-        new_text = raw
+# ── 5. BUG2: Keep Reading 섹션 추가 ──────────────────────────
+if not has_keep_reading:
+    related_html = add_internal_links(
+        category_key='B',
+        current_title=title,
+    )
+    if related_html:
+        # 면책 문구 <hr> 직전에 삽입
+        disclaimer_hr = soup.find('hr')
+        if disclaimer_hr:
+            disclaimer_hr.insert_before(BeautifulSoup(related_html, 'html.parser'))
+            print(f'  [BUG2 수정] Keep Reading 섹션 추가 (면책 문구 앞)')
+        else:
+            # fallback: 맨 끝에 추가
+            soup.append(BeautifulSoup(related_html, 'html.parser'))
+            print(f'  [BUG2 수정] Keep Reading 섹션 추가 (본문 끝)')
+        fixes_applied.append('Keep Reading 섹션 추가')
+    else:
+        print('  [BUG2] 동일 카테고리 발행 글 없음 — Keep Reading 추가 불가')
 
-        # 첫 번째 "I watched"는 건드리지 않음
-        if not first_kept and re.search(r'\bI watched\b', raw, re.IGNORECASE):
-            first_kept = True
-            continue  # 이 노드는 수정 없이 통과
+fixed_content = str(soup)
 
-        # 나머지 노드에 replacements 적용
-        for pattern, repl in replacements:
-            new_text = pattern.sub(repl, new_text)
+# ── 6. 결과 확인 ──────────────────────────────────────────────
+fixed_plain = BeautifulSoup(fixed_content, 'html.parser').get_text()
+print(f'\n수정 전 "In one case I saw": {len(isawm)}건 → 수정 후: {len(ISAWRE.findall(fixed_plain))}건')
+print(f'수정 적용: {fixes_applied}')
 
-        if new_text != raw:
-            tag.replace_with(BeautifulSoup(new_text, 'html.parser'))
-
-    return str(soup)
-
-
-fixed_content = auto_fix(content)
-
-# ── 5. 수정 전/후 비교 ────────────────────────────────────────
-orig_count  = len(PERSONAL_RE.findall(text))
-fixed_text  = BeautifulSoup(fixed_content, 'html.parser').get_text()
-fixed_count = len(PERSONAL_RE.findall(fixed_text))
-print(f'수정 전: {orig_count}개 → 수정 후: {fixed_count}개')
-
-if fixed_count > 1:
-    print('⚠️  자동 수정 후에도 2개 이상 — 수동 확인 필요')
-    # 남은 위치 출력
-    for m in PERSONAL_RE.finditer(fixed_text):
-        ctx = fixed_text[max(0,m.start()-60):m.end()+80]
-        print(f'  [{m.group()}] ...{ctx.strip()}...')
-    sys.exit(1)
-
-# ── 6. Blogger API 업데이트 ───────────────────────────────────
+# ── 7. Blogger 반영 ───────────────────────────────────────────
 confirm = input('\nBlogger에 반영하시겠습니까? (y/n): ').strip().lower()
 if confirm != 'y':
     print('취소됨')
