@@ -154,8 +154,9 @@ def add_image_alt_tags(html: str, title: str, tags: list) -> str:
     return str(soup)
 
 
-def add_internal_links(category_key: str = None) -> str:
+def add_internal_links(category_key: str = None, current_title: str = '') -> str:
     """카테고리 사일로 내부링크 — 동일 카테고리 글 최대 3개를 Related Posts 박스로 반환.
+    current_title: 현재 발행 글 제목 — 자기 자신 링크 방지용.
     타 카테고리 보충 없음 (사일로 철저 준수). 발행 글 없으면 빈 문자열 반환."""
     import random as _random
     published_dir = DATA_DIR / 'published'
@@ -176,6 +177,9 @@ def add_internal_links(category_key: str = None) -> str:
         if not rec:
             continue
         if rec.get('url') and rec.get('title') and rec.get('category_key') == category_key:
+            # 현재 글 자기 자신 제외
+            if current_title and rec['title'].strip() == current_title.strip():
+                continue
             same_cat.append(rec)
 
     if not same_cat:
@@ -502,7 +506,10 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
         html_parts.append(cta_html)
 
     # 카테고리 사일로 연관 칼럼 (CTA 바로 아래, 동일 카테고리만)
-    related_html = add_internal_links(category_key=category_key)
+    related_html = add_internal_links(
+        category_key=category_key,
+        current_title=article.get('title', ''),  # 자기 자신 링크 방지
+    )
     if related_html:
         html_parts.append(related_html)
 
