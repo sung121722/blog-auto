@@ -218,7 +218,9 @@ _FACTUAL_ERROR_PATTERNS = [
 _PERSONAL_REF_RE = re.compile(
     r'\b(i\s+watched|i\s+saw|i\s+know|i\s+once|i\s+always|i\s+remember'
     r'|i\s+tried|i\s+learned|i\'ve|i\s+retired|when\s+i\s|i\s+helped'
-    r'|i\'ve\s+sat|i\s+spent|i\s+worked|i\s+have\s+seen|i\s+have\s+watched)\b',
+    r'|i\'ve\s+sat|i\s+spent|i\s+worked|i\s+have\s+seen|i\s+have\s+watched'
+    r'|i\s+can\'t|i\s+cannot|i\s+would|i\s+will|i\s+think|i\s+believe'
+    r'|i\s+suggest|i\s+recommend)\b',
     re.IGNORECASE
 )
 
