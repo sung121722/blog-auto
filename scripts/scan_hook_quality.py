@@ -62,21 +62,30 @@ service = build('blogger', 'v3', credentials=creds)
 
 all_posts = []
 page_token = None
+page_num = 0
 
 while True:
-    kwargs = dict(blogId=BLOG_ID, maxResults=500, status='live',
-                  fields='items(id,title,url,labels),nextPageToken')
+    page_num += 1
+    kwargs = dict(
+        blogId=BLOG_ID,
+        maxResults=100,          # Blogger API 실제 한도 100
+        fetchBodies=False,       # 본문은 직접 HTTP로 가져옴
+        fetchImages=False,
+        fields='items(id,title,url,labels),nextPageToken',
+    )
     if page_token:
         kwargs['pageToken'] = page_token
 
     resp = service.posts().list(**kwargs).execute()
     batch = resp.get('items', [])
     all_posts.extend(batch)
+    print(f'  페이지 {page_num}: {len(batch)}개 수집 (누계 {len(all_posts)}개)')
+
     page_token = resp.get('nextPageToken')
     if not page_token:
         break
 
-print(f'총 {len(all_posts)}개 글 발견 → 스캔 시작...\n')
+print(f'\n총 {len(all_posts)}개 글 발견 → 스캔 시작...\n')
 
 issues = []
 for i, post in enumerate(all_posts):
