@@ -204,7 +204,23 @@ _FACTUAL_ERROR_PATTERNS = [
         'Fabricated citation detected: specific year + institution + study — '
         'use "research suggests" or "studies show" unless source is in research_context'
     ),
+
+    # ── 7. 개인참조 2회 초과 (Personal Reference > 1) ────────────
+    # 규칙: 글 당 정확히 1회만 허용 ("I watched a colleague..." 수준).
+    # BAD: "I watched..." + "In one case I saw..." (2회)
+    # OK:  "I watched a colleague once..." (1회만, 이후 I/my/I've 없음)
+    # 감지: \b(i watched|i saw|i know|i once|i always|i remember|i tried|
+    #            i learned|i've|i retired|when i|i helped|i've sat)\b
+    # 2회 이상이면 HARD BLOCK
 ]
+
+# 별도 처리 — 개인참조 횟수 감지 (패턴 리스트와 분리)
+_PERSONAL_REF_RE = re.compile(
+    r'\b(i\s+watched|i\s+saw|i\s+know|i\s+once|i\s+always|i\s+remember'
+    r'|i\s+tried|i\s+learned|i\'ve|i\s+retired|when\s+i\s|i\s+helped'
+    r'|i\'ve\s+sat|i\s+spent|i\s+worked|i\s+have\s+seen|i\s+have\s+watched)\b',
+    re.IGNORECASE
+)
 
 
 class PublishBlocked(Exception):
@@ -359,6 +375,19 @@ def run(article: dict) -> dict:
         if pattern.search(plain_text):
             raise PublishBlocked(f'[HARD] 사실 오류 패턴 감지: {desc}')
     hard_checks.append('FACTUAL_ERRORS: PASS')
+
+    # ═══════════════════════════════════════════════════════
+    # HARD CHECK 6 — 개인참조 횟수 (정확히 1회만 허용)
+    # "I watched", "I saw", "I tried" 등 1인칭 서사 표현
+    # 2회 이상이면 독자 신뢰도 / YMYL 정책 위반
+    # ═══════════════════════════════════════════════════════
+    personal_matches = _PERSONAL_REF_RE.findall(plain_text)
+    if len(personal_matches) > 1:
+        raise PublishBlocked(
+            f'[HARD] 개인참조 {len(personal_matches)}회 감지 (허용: 1회): '
+            f'{personal_matches[:4]} — 프롬프트 PERSONAL REFERENCE 규칙 위반'
+        )
+    hard_checks.append(f'PERSONAL_REF({len(personal_matches)}): PASS')
 
     # ═══════════════════════════════════════════════════════
     # SOFT CHECK 1 — 목표 단어수 미달 (카테고리별)
