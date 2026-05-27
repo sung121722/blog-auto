@@ -570,31 +570,20 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
 
 
 def submit_to_search_console(url: str, creds: Credentials):
-    """발행 직후 Google Search Console에 전체 sitemap 재제출.
-    Blogger sitemap은 페이지당 25개 → page=1~6까지 모두 제출해야
-    122개+ 글이 전부 구글에 노출됨."""
+    """발행 직후 Google Search Console에 sitemap 재제출.
+    Blogger sitemap.xml은 전체 글을 단일 파일에 포함함."""
     if not url:
         return
 
-    SITE_URL = 'https://kang121722.blogspot.com/'
-    BASE_SITEMAP = 'https://kang121722.blogspot.com/sitemap.xml'
-
     try:
         sc = build('webmasters', 'v3', credentials=creds)
-
-        # 전체 sitemap 페이지 제출 (페이지당 25개, 최대 6페이지 = 150개 커버)
-        sitemaps_to_submit = [BASE_SITEMAP] + [
-            f'{BASE_SITEMAP}?page={p}' for p in range(2, 7)
-        ]
-        for feedpath in sitemaps_to_submit:
-            try:
-                sc.sitemaps().submit(siteUrl=SITE_URL, feedpath=feedpath).execute()
-                logger.info(f'Search Console sitemap 제출: {feedpath}')
-            except Exception as e:
-                logger.warning(f'sitemap 제출 실패 ({feedpath}): {e}')
-
+        sc.sitemaps().submit(
+            siteUrl='https://kang121722.blogspot.com/',
+            feedpath=BLOG_SITEMAP_URL,
+        ).execute()
+        logger.info('Search Console 사이트맵 재제출 완료')
     except Exception as e:
-        logger.warning(f'Search Console 연결 실패: {e}')
+        logger.warning(f'Search Console 사이트맵 제출 실패: {e}')
 
 
 # ─── Telegram ────────────────────────────────────────
