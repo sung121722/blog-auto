@@ -72,6 +72,9 @@ _CJK_RE = re.compile(
 #   1. RMD 나이 오류     — SECURE 2.0 이후 73세 (2023~)
 #   2. Social Security FRA 오류 — 1960년생 이후 67세
 #   3. Medicare Part D donut hole — 2025년부터 폐지
+#   4. IRA 기여 한도 저가 표기
+#   5. Coverage gap 현재 시제
+#   6. 가짜 연구 인용 — 기관+연도+% 조합
 #   4. IRA 기여 한도 저가 표기 — 2024+ 7,000달러 (50세↑ 8,000)
 
 _FACTUAL_ERROR_PATTERNS = [
@@ -182,6 +185,24 @@ _FACTUAL_ERROR_PATTERNS = [
             re.IGNORECASE | re.DOTALL
         ),
         'Coverage gap described as a current cost burden — gap was eliminated Jan 1 2025.'
+    ),
+
+    # ── 6. 가짜 연구 인용 (Hallucinated Citation) ────────────────
+    # AI가 기관명 + 연도 + 구체적 % 수치를 조합해 없는 연구를 만들어내는 패턴 차단
+    # BAD: "A 2025 study from Johns Hopkins found that X% fewer..."
+    # BAD: "According to a 2026 Harvard report, seniors who... had 43%..."
+    # OK:  "Research suggests tai chi reduces fall risk."
+    # OK:  "Studies show regular exercise lowers heart disease risk."
+    (
+        re.compile(
+            r'\b(?:a |an )?20\d{2}\s+(?:study|report|research|trial)\s+'
+            r'(?:from|by|at|conducted by)\s+'
+            r'(?:johns?\s+hopkins?|harvard|mayo\s+clinic|stanford|cdc|nih|aarp|'
+            r'university\s+of|american\s+(?:heart|college|medical))\b',
+            re.IGNORECASE | re.DOTALL
+        ),
+        'Fabricated citation detected: specific year + institution + study — '
+        'use "research suggests" or "studies show" unless source is in research_context'
     ),
 ]
 
