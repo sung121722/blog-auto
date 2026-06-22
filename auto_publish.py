@@ -129,10 +129,10 @@ def make_slug(title: str) -> str:
 
 def run():
     logger.info('=' * 55)
-    logger.info('  Today\'s Senior TV — Pipeline Start')
+    logger.info('  Healthy After 50 — Pipeline Start')
     logger.info('=' * 55)
 
-    # 1. 키워드 수집
+    # 1. 키워드 수집 (60일 이력 기반 중복 제거)
     collected = collect_keywords_for_today()
     category_key = collected['category_key']
     category_info = collected['category_info']
@@ -140,13 +140,17 @@ def run():
     logger.info(f'카테고리: {category_key} / {category_info["name"]}')
     logger.info(f'Primary Keyword: {collected["primary_keyword"]}')
 
-    # 2. 콘텐츠 생성
+    # 2. 콘텐츠 생성 — collector가 선택한 키워드 직접 전달 (이력 우회 방지)
     logger.info('글 생성 중...')
-    post = generate_post(category_key=category_key)
+    post = generate_post(
+        category_key=category_key,
+        primary_keyword=collected['primary_keyword'],
+        supporting_keywords=collected['supporting_keywords'],
+    )
 
     # 3. 이미지 수집 (URL 방식) — 항상 이미지 보장 (비상 풀 최종 백업)
     logger.info('이미지 가져오는 중...')
-    image_query = post.get('image_query', 'vintage americana seniors nostalgia')
+    image_query = post.get('image_query', 'older adult at home natural morning light')
     img_url, photographer = fetch_unsplash_url(image_query, category_key=category_key)
     image_html = build_image_html(img_url, photographer, post.get('title', ''))
     logger.info(f'이미지 준비: {img_url[:70]}...')

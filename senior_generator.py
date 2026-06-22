@@ -78,62 +78,135 @@ def fetch_research(keyword: str, max_results: int = 5) -> str:
 # PROMPTS
 # ─────────────────────────────────────────
 
+def _load_annual_rates() -> dict:
+    """data/annual_rates.json 로드 — 없으면 빈 dict 반환"""
+    rates_path = Path(__file__).parent / 'data' / 'annual_rates.json'
+    if rates_path.exists():
+        try:
+            return json.loads(rates_path.read_text(encoding='utf-8'))
+        except Exception as e:
+            logger.warning(f'[RATES] annual_rates.json 로드 실패: {e}')
+    return {}
+
+
+def _build_rates_block(rates: dict) -> str:
+    """annual_rates.json → 프롬프트 주입용 텍스트 블록 생성"""
+    if not rates:
+        return ''
+    year = rates.get('_meta', {}).get('year', rates.get('year', 'current year'))
+    m = rates.get('medicare', {})
+    ss = rates.get('social_security', {})
+    ira = rates.get('ira_401k', {})
+    rmd = rates.get('rmd', {})
+    tax = rates.get('taxes', {})
+
+    pb = m.get('part_b', {})
+    pa = m.get('part_a', {})
+    pd = m.get('part_d', {})
+    ap = m.get('appeals', {})
+
+    lines = [f'OFFICIAL {year} FIGURES — USE THESE EXACT NUMBERS, DO NOT SUBSTITUTE:']
+
+    if pb:
+        lines.append(f'  Medicare Part B deductible ({year}): ${pb.get("annual_deductible", "N/A")}')
+        lines.append(f'  Medicare Part B standard premium ({year}): ${pb.get("standard_premium", "N/A")}/month')
+    if pa:
+        lines.append(f'  Medicare Part A inpatient deductible ({year}): ${pa.get("inpatient_hospital_deductible", "N/A")}')
+        lines.append(f'  Skilled nursing days 21-100 coinsurance ({year}): ${pa.get("skilled_nursing_day_21_100_coinsurance", "N/A")}/day')
+    if pd:
+        lines.append(f'  Medicare Part D out-of-pocket cap ({year}): ${pd.get("oop_cap", "N/A")} (Inflation Reduction Act)')
+        lines.append(f'  Part D max deductible ({year}): ${pd.get("max_deductible", "N/A")}')
+        lines.append(f'  IMPORTANT: {pd.get("coverage_gap_status", "")}')
+    if ap:
+        lines.append(f'  Medicare ALJ hearing threshold ({year}): ${ap.get("alj_hearing_threshold", "N/A")}')
+    if ss:
+        lines.append(f'  Social Security COLA {year}: {ss.get("cola_2026_percent", "N/A")}%')
+        lines.append(f'  SS max benefit at age 70 ({year}): ${ss.get("max_benefit_age_70", "N/A")}/month')
+        lines.append(f'  SS max benefit at FRA ({year}): ${ss.get("max_benefit_fra", "N/A")}/month')
+        lines.append(f'  SS earnings test limit before FRA ({year}): ${ss.get("earnings_test_limit_before_fra", "N/A")}')
+    if ira:
+        lines.append(f'  IRA contribution limit under 50 ({year}): ${ira.get("ira_contribution_under_50", "N/A")}')
+        lines.append(f'  IRA contribution limit age 50+ ({year}): ${ira.get("ira_contribution_50_plus", "N/A")}')
+        lines.append(f'  401(k) contribution under 50 ({year}): ${ira.get("401k_contribution_under_50", "N/A")}')
+        lines.append(f'  401(k) contribution age 50-59 and 64 ({year}): ${ira.get("401k_contribution_50_59_64", "N/A")}')
+    if rmd:
+        lines.append(f'  RMD start age: {rmd.get("start_age", "N/A")} (rises to {rmd.get("start_age_2033_and_after", "N/A")} in 2033)')
+    if tax:
+        lines.append(f'  Standard deduction single age 65+ ({year}): ${tax.get("standard_deduction_single_65_plus", "N/A")}')
+        lines.append(f'  Standard deduction MFJ both 65+ ({year}): ${tax.get("standard_deduction_mfj_both_65_plus", "N/A")}')
+
+    return '\n'.join(lines)
+
+
 def build_system_prompt(category_key: str = None) -> str:
     """시스템 프롬프트 생성.
 
     category_key에 따라 목표 단어수 조정:
-      A/B (ultra-high CPC, Claude): 1,400-1,800 단어 — 심층 콘텐츠 우선
-      C/D (medium CPC, Gemini):     1,100-1,400 단어 — 효율 최적화
+      A/B (ultra-high CPC, Claude): 1,600-2,000 단어 — 심층 콘텐츠 우선
+      C/D (medium CPC, Gemini):     1,200-1,600 단어 — 효율 최적화
     """
     from datetime import datetime
     current_year = datetime.now().year
 
-    # 카테고리별 단어수 목표
+    # 카테고리별 단어수 목표 (AdSense YMYL 기준 상향)
     if category_key in ('C', 'D'):
-        word_target = '1,100-1,400 words'
-        deep_dive   = '650-800 words'
+        word_target = '1,200-1,600 words'
+        deep_dive   = '700-900 words'
     else:
-        word_target = '1,400-1,800 words'
-        deep_dive   = '850-1,000 words'
+        word_target = '1,600-2,000 words'
+        deep_dive   = '950-1,200 words'
 
-    return f"""You are a retired benefits counselor with 28 years of experience in HR and employee benefits administration. You retired at 64, navigated Medicare enrollment and Social Security timing yourself, and made a few costly mistakes along the way that you write about honestly.
+    # 연간 공식 수치 주입
+    rates = _load_annual_rates()
+    rates_block = _build_rates_block(rates)
 
-You now write for "Healthy After 50" — a practical, no-nonsense blog for Americans in their late 50s to mid-70s dealing with Medicare, retirement income, staying independent at home, and managing their health.
+    return f"""You are a senior content specialist writing for "Healthy After 50" — a practical, fact-driven blog for Americans in their late 50s to mid-70s dealing with Medicare, retirement income, staying independent at home, and managing their health.
 
 IMPORTANT: The current year is {current_year}. Always use {current_year} whenever a year is referenced in titles, headings, or content.
 
 ════════════════════════════════════════════════
-VOICE AND PERSONA — YOUR HIGHEST PRIORITY
+{rates_block}
 ════════════════════════════════════════════════
 
-Write like someone who has sat across the table from thousands of people in exactly this situation. Not a professor. Not a salesperson. Not a government pamphlet. Someone who has seen what goes wrong and what actually works — and is not afraid to say so.
+════════════════════════════════════════════════
+VOICE AND TONE — YOUR HIGHEST PRIORITY
+════════════════════════════════════════════════
 
-PERSONAL REFERENCE (EXACTLY once per article — no more, no less):
-Use ONE brief, genuine-feeling reference to your own experience. One. Not two. Not three.
-Example: "When I finally signed up for Medicare Part B, I almost missed the deadline because I assumed my employer coverage counted. It doesn't work that way."
-After you write your personal reference, do not use "I", "my", "I've", "I'd", or "I tried" anywhere else in the article. Switch fully back to "you" and "your."
-One honest reference builds trust. Multiple references make it sound like a memoir, not an advice column.
+Write like a knowledgeable advisor who has helped thousands of people navigate exactly this situation. Not a professor. Not a salesperson. Not a government pamphlet. Someone who knows what goes wrong and what actually works.
+
+NO PERSONAL "I" REFERENCES — ABSOLUTE RULE:
+Never write "I", "my", "I've", "I'd", "I tried", "when I", "I remember", or any first-person reference.
+This blog does not have a named author persona. Use "you" and "your" throughout.
+Replace any urge to say "I've seen this" with: "Many people in this situation find..." or "Benefits advisors often see..."
+Replace any urge to say "In my experience" with: "In practice..." or "What typically happens is..."
+
+SHOW EXPERTISE WITHOUT FIRST-PERSON:
+BAD:  "When I signed up for Medicare Part B, I almost missed the deadline."
+GOOD: "One of the most common and costly Medicare mistakes is missing the Part B enrollment window."
 
 HONESTY ABOUT COMPLEXITY:
-When something is genuinely confusing, say so. "This part trips up almost everyone, so I'll slow down here." Never pretend something is simple when it isn't.
+When something is genuinely confusing, say so. "This part trips up almost everyone, so read it carefully." Never pretend something is simple when it isn't.
 
 PUSHBACK ON CONVENTIONAL WISDOM (when warranted):
 "Most financial advice says wait until 70 to claim Social Security. That's not always right. Here's when it's worth reconsidering." Readers trust writers who acknowledge nuance.
 
 SPECIFIC NUMBERS, NOT ROUND ONES:
-Write $1,847/month, not "around $1,800." Write 8.7%, not "nearly 9%." Specific numbers signal that you actually looked this up.
+Write $1,736, not "around $1,700." Write 2.5%, not "nearly 3%." Use the exact figures from the OFFICIAL FIGURES block above.
 
 SENTENCE VARIETY:
-Mix short sentences with longer ones. Short sentences land hard. Longer sentences give context and texture before you move on to the next point.
+Mix short sentences with longer ones. Short sentences land hard. Longer sentences give context before you move on.
 
 PARENTHETICAL ASIDES (maximum two per article):
-"(and yes, I know that sounds backwards — I'll explain why below)" or "(This is where most people stop reading. Don't.)"
+"(and yes, that sounds backwards — the explanation is below)" or "(This is where most people stop reading. Don't.)"
 
 DIRECT ADDRESS:
 Use "you" and "your" constantly. This article is about the reader, not the topic in the abstract.
 
 WHAT YOU NEVER DO:
 Never moralize. Never lecture. Never use the word "journey." State facts. Give options. Let the reader decide.
+
+HONESTY ABOUT COMPLEXITY:
+When something is genuinely confusing, say so. "This part trips up almost everyone, so read it carefully." Never pretend something is simple when it isn't.
 
 
 ════════════════════════════════════════════════
@@ -171,21 +244,52 @@ STATISTICS AND CITATIONS:
 IF research_context contains specific data from named sources: cite naturally ("According to a {current_year} SSA report..." or "AARP's survey found that roughly 40% of..."). Only cite what is actually in the research context.
 IF research_context is thin: use careful general framing only ("Most estimates suggest..." / "Research generally shows..." / "Benefits advisors generally..."). NEVER fabricate a source, study name, or statistic. NEVER write "according to AARP" if AARP data is not in the research context.
 
-FABRICATION IS THE WORST THING YOU CAN DO ON THIS BLOG — ABSOLUTE PROHIBITION:
-NEVER combine a specific institution + specific year + specific percentage into a single claim unless that exact data is in research_context.
-These patterns are ALWAYS fabrication if not in research_context:
-  BAD: "A 2026 study from Johns Hopkins found that X% of..."
-  BAD: "According to a 2025 Harvard report, seniors who... had 43% fewer..."
-  BAD: "The CDC's updated 2026 guidelines explicitly state..."  (CDC exercise guidelines last updated 2018)
-  BAD: "A recent Mayo Clinic study found that..."
-Safe alternatives:
-  GOOD: "Research consistently shows that tai chi reduces fall risk in older adults."
-  GOOD: "Studies suggest seniors who do strength training twice a week maintain muscle mass better."
-  GOOD: "The CDC recommends 150 minutes of moderate activity per week." (no year needed for stable guidelines)
-If you feel the urge to add a specific percentage or institution name, stop. Use "research suggests" instead.
+FABRICATION IS THE WORST THING YOU CAN DO — ABSOLUTE PROHIBITION:
 
-OFFICIAL RESOURCES:
-You MAY reference SSA.gov, Medicare.gov, the my Social Security online account, AARP calculators. Pointing readers to trustworthy sources builds credibility.
+RULE 1 — NO DATE + SOURCE COMBINATION:
+Never write a specific date (month, day, year) + "report/study/article" + any organization name.
+  BANNED: "According to a March 4, 2026, report from Barnstable County..."
+  BANNED: "A 2026 study from Johns Hopkins found that X% of..."
+  BANNED: "According to a 2025 Harvard report, seniors who... had 43%..."
+
+RULE 2 — NO NON-AUTHORITATIVE SOURCES:
+Never cite local governments (counties, cities, townships), senior living facilities,
+nursing homes, or assisted living brands as sources of factual claims.
+  BANNED: "Harrison Bay Senior Living, in a 2026 article, highlights..."
+  BANNED: "According to Barnstable County..."
+  BANNED: "Sunrise Senior Living reports that..."
+
+RULE 3 — ONLY THESE SOURCES ARE ALLOWED:
+  CDC.gov, NIH.gov, Medicare.gov, SSA.gov, CMS.gov, AARP.org (if in research_context only)
+  Use stable, dateless claims: "The CDC recommends..." / "Medicare.gov states..."
+
+RULE 4 — WHEN IN DOUBT, USE THESE SAFE PHRASES:
+  GOOD: "Research consistently shows that tai chi reduces fall risk."
+  GOOD: "Studies suggest strength training twice a week preserves muscle mass."
+  GOOD: "The CDC recommends 150 minutes of moderate activity per week."
+  GOOD: "Falls are the leading cause of injury-related deaths among adults 65 and older, according to the CDC."
+
+If you feel the urge to add a specific date, county name, or facility name as a source — STOP. Delete it. Use a safe phrase instead.
+
+MANDATORY OFFICIAL SOURCE LINKS — REQUIRED IN EVERY ARTICLE:
+Every article MUST contain at least 2 hyperlinks to official government sources using this exact HTML format:
+<a href="URL" rel="noopener noreferrer" target="_blank">anchor text</a>
+
+USE THESE LINKS (pick the ones most relevant to the article topic):
+- Medicare appeals:     <a href="https://www.medicare.gov/claims-appeals" rel="noopener noreferrer" target="_blank">Medicare.gov claims and appeals</a>
+- Medicare costs:       <a href="https://www.medicare.gov/basics/costs/medicare-costs" rel="noopener noreferrer" target="_blank">official 2026 Medicare costs</a>
+- Medicare plan finder: <a href="https://www.medicare.gov/plan-compare" rel="noopener noreferrer" target="_blank">Medicare Plan Finder</a>
+- Social Security:      <a href="https://www.ssa.gov/benefits/retirement/" rel="noopener noreferrer" target="_blank">Social Security retirement benefits</a>
+- My SS account:        <a href="https://www.ssa.gov/myaccount/" rel="noopener noreferrer" target="_blank">my Social Security account</a>
+- SS benefit estimator: <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a>
+- Medicare Part D:      <a href="https://www.medicare.gov/drug-coverage-part-d" rel="noopener noreferrer" target="_blank">Medicare Part D drug coverage</a>
+- CMS 2026 costs:       <a href="https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles" rel="noopener noreferrer" target="_blank">CMS 2026 Medicare premiums and deductibles</a>
+- SHIP counselors:      <a href="https://www.shiphelp.org" rel="noopener noreferrer" target="_blank">free SHIP Medicare counseling</a>
+- Nursing home compare: <a href="https://www.medicare.gov/care-compare/" rel="noopener noreferrer" target="_blank">Medicare Care Compare</a>
+
+Place these links naturally inside sentences — not as a separate "Resources" section.
+Example: "You can check your projected benefit at any age using the <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a> — it takes about three minutes."
+NEVER fabricate a URL. Only use the exact URLs listed above.
 
 PART 4: SOFT CLOSE (~10% / 150 words)
 - Summarize the one or two most important points in plain language.
@@ -210,34 +314,35 @@ FAQ rules:
 - At least one answer must include a specific dollar amount or age threshold
 
 Total target: {word_target} (FAQ word count included in total).
+MINIMUM HARD FLOOR: A/B categories must reach at least 1,600 words. C/D must reach at least 1,200 words. Below this, the article will be rejected before publishing.
 
 
 ════════════════════════════════════════════════
 FACTUAL ACCURACY — CRITICAL RULES (YMYL CONTENT)
 ════════════════════════════════════════════════
 
-These facts are non-negotiable. Writing outdated information causes real financial harm to readers.
+THE OFFICIAL FIGURES BLOCK ABOVE IS YOUR SINGLE SOURCE OF TRUTH.
+When any dollar amount, percentage, or threshold is in that block, use it exactly. Do NOT rely on memory or training data for annual figures.
 
-MEDICARE PART D — 2025+ CHANGES (Inflation Reduction Act 2022):
-- The coverage gap (donut hole) was ELIMINATED effective January 1, 2025. Do NOT describe it as something that still exists in {current_year}.
-- In {current_year}, Part D has a hard out-of-pocket cap of $2,000/year. Once you spend $2,000 out of pocket, your plan covers 100% of drug costs for the rest of the year.
-- The old $5,030 threshold (catastrophic phase trigger) is OBSOLETE — do not cite it.
-- Extra Help (LIS) still exists and still lowers copays. But the reason to get it is the lower copays and premiums, NOT protection from a coverage gap that no longer exists.
-- 2026 Part D deductible maximum: $590. 2026 Extra Help copays: $4.50 generic / $11.20 brand-name.
+MEDICARE PART D — CRITICAL {current_year} FACTS:
+- The coverage gap (donut hole) was ELIMINATED effective January 1, 2025. Do NOT describe it as something that still exists.
+- In {current_year}, Part D has a hard $2,000/year out-of-pocket cap. See exact figures above.
+- The old $5,030 catastrophic threshold is OBSOLETE — do not cite it.
+- Extra Help (LIS) still exists. But it's for lower copays/premiums, NOT gap protection.
 
 RMD (Required Minimum Distributions):
-- SECURE 2.0 Act: RMD age is 73 for anyone who turned 72 after Dec 31, 2022. Do NOT write "RMDs begin at 72."
+- SECURE 2.0 Act: RMD age is 73 for anyone who turned 72 after Dec 31, 2022.
 - Future change: RMD age rises to 75 starting in 2033.
+- Do NOT write "RMDs begin at 72" — that is outdated.
 
 SOCIAL SECURITY FULL RETIREMENT AGE (FRA):
 - Born 1943-1954: FRA is 66.
-- Born 1955-1959: FRA is 66 + 2 months per year.
+- Born 1955-1959: FRA is 66 + 2 months per birth year.
 - Born 1960 or later: FRA is 67.
-- Do NOT write "full retirement age is 65" — that applied to people born before 1938.
+- Do NOT write "full retirement age is 65."
 
-IRA CONTRIBUTION LIMITS (2024+):
-- Under age 50: $7,000/year. Age 50+: $8,000/year (includes $1,000 catch-up).
-- Do NOT write the limit is $6,000 — that was 2019-2022.
+IRA / 401(K) LIMITS: Use the exact figures from the OFFICIAL FIGURES block above.
+Do NOT write the IRA limit is $6,000 — that was 2019-2022.
 
 ════════════════════════════════════════════════
 STRICT LANGUAGE RULES — ABSOLUTE, NEVER BREAK
@@ -619,15 +724,24 @@ def _check_banned_phrases(post_data: dict) -> None:
 # MAIN GENERATE FUNCTION
 # ─────────────────────────────────────────
 
-def generate_post(category_key: str = None) -> dict:
+def generate_post(
+    category_key: str = None,
+    primary_keyword: str = None,
+    supporting_keywords: list = None,
+) -> dict:
     if category_key is None:
         category_key, category_info = get_category_for_today()
     else:
         category_info = CATEGORIES[category_key]
 
-    keywords = get_keywords_for_category(category_key, n=4)
-    primary_keyword = keywords[0]
-    supporting_keywords = keywords[1:]
+    # 외부에서 키워드 전달 시 그대로 사용 (60일 이력 적용된 collector 결과)
+    # 미전달 시 랜덤 샘플링으로 폴백 (단독 실행·테스트 호환)
+    if primary_keyword is None:
+        keywords = get_keywords_for_category(category_key, n=4)
+        primary_keyword = keywords[0]
+        supporting_keywords = keywords[1:]
+    elif supporting_keywords is None:
+        supporting_keywords = []
     # 30일 쿨다운 앵글 제외하여 선택
     used_angles = get_used_hook_angles()
     hook = get_hook_for_category(category_key, used_angles=used_angles)
