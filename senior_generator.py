@@ -135,6 +135,27 @@ def _build_rates_block(rates: dict) -> str:
         lines.append(f'  Standard deduction single age 65+ ({year}): ${tax.get("standard_deduction_single_65_plus", "N/A")}')
         lines.append(f'  Standard deduction MFJ both 65+ ({year}): ${tax.get("standard_deduction_mfj_both_65_plus", "N/A")}')
 
+    bp = rates.get('benefit_programs', {})
+    if bp:
+        ssi = bp.get('ssi', {})
+        va  = bp.get('va_pension_aid_attendance', {})
+        msp = bp.get('medicare_savings_programs', {})
+        lis = bp.get('extra_help_lis', {})
+        snap = bp.get('snap', {})
+        liheap = bp.get('liheap', {})
+        if ssi:
+            lines.append(f'  SSI federal benefit rate ({year}): ${ssi.get("federal_benefit_rate_individual", "N/A")}/month individual, ${ssi.get("federal_benefit_rate_couple", "N/A")}/month couple')
+        if va:
+            lines.append(f'  VA Aid and Attendance MAPR ({year}): ${va.get("mapr_veteran_with_spouse_monthly", "N/A")}/month veteran with spouse; net worth limit ${va.get("net_worth_limit", "N/A")}')
+        if msp:
+            lines.append(f'  Medicare Savings Programs income limits ({year}): QMB ${msp.get("qmb_income_limit_single", "N/A")}/mo single, SLMB ${msp.get("slmb_income_limit_single", "N/A")}/mo single, QI ${msp.get("qi_income_limit_single", "N/A")}/mo single; resource limit ${msp.get("resource_limit_single", "N/A")} single / ${msp.get("resource_limit_couple", "N/A")} couple')
+        if lis:
+            lines.append(f'  Medicare Extra Help income limit ({year}): ${lis.get("income_limit_individual_annual", "N/A")}/year individual, ${lis.get("income_limit_couple_annual", "N/A")}/year couple; resource limit ${lis.get("resource_limit_single", "N/A")} single / ${lis.get("resource_limit_couple", "N/A")} couple')
+        if snap:
+            lines.append(f'  SNAP for seniors ({year}): net income limit ${snap.get("net_income_limit_single_monthly", "N/A")}/month single (age {snap.get("elderly_age_threshold", "N/A")}+ exempt from gross income test); resource limit ${snap.get("resource_limit_elderly_or_disabled", "N/A")}')
+        if liheap:
+            lines.append(f'  LIHEAP eligibility ({year}): federal poverty level ${liheap.get("federal_poverty_level_single_annual", "N/A")}/year single; eligibility range {liheap.get("eligibility_range_pct_fpl", "N/A")}')
+
     return '\n'.join(lines)
 
 

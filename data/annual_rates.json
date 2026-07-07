@@ -1,0 +1,145 @@
+{
+  "_meta": {
+    "description": "CMS/SSA 공식 발표 연간 수치 — 매년 11월 업데이트 필요",
+    "cms_source": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles",
+    "ssa_source": "https://www.ssa.gov/news/press/factsheets/colafacts2026.pdf",
+    "last_updated": "2025-11-14",
+    "year": 2026
+  },
+  "medicare": {
+    "part_b": {
+      "standard_premium": 185.00,
+      "annual_deductible": 283,
+      "note": "IRMAA surcharge applies above $106,000 individual / $212,000 joint income"
+    },
+    "part_a": {
+      "inpatient_hospital_deductible": 1736,
+      "skilled_nursing_day_21_100_coinsurance": 223.00,
+      "lifetime_reserve_day_coinsurance": 736.00,
+      "note": "Deductible applies per benefit period, not per year"
+    },
+    "part_d": {
+      "oop_cap": 2000,
+      "max_deductible": 590,
+      "extra_help_generic_copay": 4.50,
+      "extra_help_brand_copay": 11.20,
+      "coverage_gap_status": "ELIMINATED as of January 1, 2025 — do NOT reference donut hole",
+      "note": "Inflation Reduction Act 2022 — $2,000 hard cap effective 2025"
+    },
+    "appeals": {
+      "alj_hearing_threshold": 200,
+      "federal_court_threshold": 1760,
+      "redetermination_deadline_days": 120,
+      "qic_reconsideration_deadline_days": 180
+    },
+    "advantage": {
+      "max_oop_in_network": 9350,
+      "max_oop_combined": 14000
+    }
+  },
+  "social_security": {
+    "cola_2026_percent": 2.5,
+    "full_retirement_age": {
+      "born_before_1938": 65,
+      "born_1943_1954": 66,
+      "born_1955": "66 years 2 months",
+      "born_1956": "66 years 4 months",
+      "born_1957": "66 years 6 months",
+      "born_1958": "66 years 8 months",
+      "born_1959": "66 years 10 months",
+      "born_1960_or_later": 67
+    },
+    "early_claiming_reduction_per_month": "0.556% per month before FRA (up to 36 months)",
+    "delayed_credit_per_year": "8% per year after FRA up to age 70",
+    "earnings_test_limit_before_fra": 23400,
+    "earnings_test_reduction": "$1 withheld per $2 earned over limit",
+    "max_taxable_earnings": 176100,
+    "max_benefit_age_70": 5108,
+    "max_benefit_fra": 4018,
+    "max_benefit_age_62": 2831,
+    "average_retired_worker_benefit": 1976
+  },
+  "ira_401k": {
+    "ira_contribution_under_50": 7000,
+    "ira_contribution_50_plus": 8000,
+    "ira_catchup": 1000,
+    "traditional_ira_deduction_phaseout_single_covered": "79000-89000",
+    "traditional_ira_deduction_phaseout_mfj_covered": "126000-146000",
+    "roth_ira_phaseout_single": "150000-165000",
+    "roth_ira_phaseout_mfj": "236000-246000",
+    "401k_contribution_under_50": 23500,
+    "401k_contribution_50_59_64": 31000,
+    "401k_contribution_60_63_super_catchup": 34750,
+    "note": "SECURE 2.0: Super catch-up age 60-63 = $11,250 extra in 2025+"
+  },
+  "rmd": {
+    "start_age": 73,
+    "start_age_2033_and_after": 75,
+    "note": "SECURE 2.0 Act: Age 73 for those who turned 72 after Dec 31, 2022"
+  },
+  "taxes": {
+    "standard_deduction_single_65_plus": 16550,
+    "standard_deduction_mfj_both_65_plus": 32300,
+    "long_term_cg_0pct_threshold_single": 48350,
+    "long_term_cg_0pct_threshold_mfj": 96700,
+    "ss_benefit_taxable_threshold_single": 25000,
+    "ss_benefit_taxable_threshold_mfj": 32000,
+    "ss_benefit_85pct_threshold_single": 34000,
+    "ss_benefit_85pct_threshold_mfj": 44000
+  },
+  "benefit_programs": {
+    "_source_note": "SSA/VA/CMS/USDA/ACF 공식 발표 기준 — 매년 갱신 필요. 검색 시점(2026) 기준 확인된 수치.",
+    "ssi": {
+      "federal_benefit_rate_individual": 994,
+      "federal_benefit_rate_couple": 1491,
+      "cola_percent": 2.8,
+      "note": "State supplements may increase total benefit — varies by state"
+    },
+    "va_pension_aid_attendance": {
+      "mapr_veteran_with_spouse_annual": 34488,
+      "mapr_veteran_with_spouse_monthly": 2874,
+      "mapr_basic_veteran_with_dependent_annual": 22839,
+      "mapr_basic_veteran_with_dependent_monthly": 1903,
+      "net_worth_limit": 163699,
+      "period": "December 1, 2025 - November 30, 2026",
+      "note": "MAPR minus countable income (after deducting qualifying medical expenses over 5% of MAPR) = monthly benefit"
+    },
+    "medicare_savings_programs": {
+      "qmb_income_limit_single": 1350,
+      "qmb_income_limit_couple": 1824,
+      "slmb_income_limit_single": 1616,
+      "slmb_income_limit_couple": 2184,
+      "qi_income_limit_single": 1816,
+      "qi_income_limit_couple": 2455,
+      "resource_limit_single": 9950,
+      "resource_limit_couple": 14910,
+      "note": "Federal limits for 48 states + DC. Alaska/Hawaii slightly higher. Some states (CT, DE, LA, ME, MS) have no asset limit; CA limit is much higher ($130,000/$195,000)"
+    },
+    "extra_help_lis": {
+      "income_limit_individual_annual": 23475,
+      "income_limit_couple_annual": 31725,
+      "resource_limit_single": 16590,
+      "resource_limit_couple": 33100,
+      "resource_limit_single_with_burial_exclusion": 18090,
+      "resource_limit_couple_with_burial_exclusion": 36100,
+      "generic_copay_cap": 5.10,
+      "brand_copay_cap": 12.65,
+      "note": "Partial subsidy tier ended in 2024 — everyone who qualifies now gets full subsidy"
+    },
+    "snap": {
+      "gross_income_limit_single_monthly": 1696,
+      "net_income_limit_single_monthly": 1305,
+      "resource_limit_standard": 3000,
+      "resource_limit_elderly_or_disabled": 4500,
+      "elderly_age_threshold": 60,
+      "medical_expense_deduction_threshold": 35,
+      "note": "Households with a member 60+ are exempt from the gross income test — only need to pass net income test (net income <= FPL)"
+    },
+    "liheap": {
+      "federal_poverty_level_single_annual": 15960,
+      "federal_poverty_level_family_of_4_annual": 33000,
+      "eligibility_range_pct_fpl": "110% to 150% of FPG, or up to 60% of State Median Income, whichever is greater",
+      "note": "Exact percentage threshold varies by state — direct readers to their state LIHEAP office for exact cutoff"
+    }
+  }
+}
