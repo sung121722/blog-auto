@@ -9,11 +9,13 @@ publish_governor.py — 발행 전 최종 품질 게이트
   SOFT_WARN  : 경고 로그 기록 + 통과 (수동 확인 권장)
 
 HARD_BLOCK 조건:
-  1. 최소 단어수 미달 (900) — JSON 잘림 감지
+  1. 최소 단어수 미달 (A/B: 1,200 / C/D: 1,000) — JSON 잘림 감지
   2. CJK / 비ASCII 문자 — 한중일 문자 혼입
   3. BANNED_HARD 문구 — 순수 AI 특유 표현
   4. 사실 오류 패턴 — RMD 나이 오류, 잘못된 법률 연도 등
   5. 빈 제목 / 빈 HTML
+  6. 개인참조 (I watched/saw/tried 등) 1회 이상 — 0회 정책 (AdSense Helpful Content)
+  7. 연간 수치 stale 감지 — annual_rates.json 기반 이전 연도 수치 사용 차단
 
 SOFT_WARN 조건:
   1. 목표 단어수 미달 (1,400) — 짧은 글
@@ -187,22 +189,61 @@ _FACTUAL_ERROR_PATTERNS = [
         'Coverage gap described as a current cost burden — gap was eliminated Jan 1 2025.'
     ),
 
-    # ── 6. 가짜 연구 인용 (Hallucinated Citation) ────────────────
-    # AI가 기관명 + 연도 + 구체적 % 수치를 조합해 없는 연구를 만들어내는 패턴 차단
-    # BAD: "A 2025 study from Johns Hopkins found that X% fewer..."
-    # BAD: "According to a 2026 Harvard report, seniors who... had 43%..."
-    # OK:  "Research suggests tai chi reduces fall risk."
-    # OK:  "Studies show regular exercise lowers heart disease risk."
+    # ── 6. 가짜 연구 인용 (Hallucinated Citation) — 3가지 패턴 차단 ──
+    #
+    # [6-A] 연도 + study/report + 기관명 조합
+    # BAD: "A 2026 study from Johns Hopkins found..."
+    # BAD: "According to a March 4, 2026, report from Barnstable County..."
+    (
+        re.compile(
+            r'\b(?:a |an )?(?:(?:january|february|march|april|may|june|july|august|'
+            r'september|october|november|december)\s+\d{1,2},?\s+)?'
+            r'20\d{2}[,]?\s+(?:study|report|research|trial|article|survey|analysis)\s+'
+            r'(?:from|by|at|conducted by|published by)\s+\S',
+            re.IGNORECASE | re.DOTALL
+        ),
+        '[6-A] 날짜/연도 + report/study + 기관 조합 감지 — 할루시네이션 위험. '
+        '"Research suggests..." 또는 CDC/SSA/Medicare.gov 직접 링크 사용'
+    ),
+    #
+    # [6-B] 비공인 기관 인용 — senior living 업체, county, 로컬 기관
+    # BAD: "Harrison Bay Senior Living, in a 2026 article, highlights..."
+    # BAD: "According to Barnstable County..."
+    # OK:  "According to the CDC..." / "Medicare.gov states..."
+    (
+        re.compile(
+            # 패턴A: 동사 먼저 → 기관명 (According to Barnstable County)
+            r'(?:'
+            r'\b(?:according to|per|as noted by|as stated by|found that|reports? that)\b'
+            r'.{0,80}'
+            r'\b(?:senior living|assisted living|memory care|nursing home|'
+            r'county|township|borough|village|city of|town of)\b'
+            r'|'
+            # 패턴B: 기관명 먼저 → 동사 (Harrison Bay Senior Living ... highlights)
+            r'\b(?:senior living|assisted living|memory care|nursing home)\b'
+            r'[^\n]{0,80}'
+            r'\b(?:highlights?|notes?|reports?|states?|finds?|shows?|suggests?|'
+            r'recommends?|emphasize?s?|points? out)\b'
+            r')',
+            re.IGNORECASE
+        ),
+        '[6-B] 비공인 기관 인용 감지 (senior living업체 / 지방정부) — '
+        'CDC, NIH, Medicare.gov, SSA.gov 등 공식 출처만 인용 가능'
+    ),
+    #
+    # [6-C] 연도 + 기관명 + 구체적 % 수치 조합 (가장 위험한 패턴)
+    # BAD: "A 2026 Harvard report found 43% of seniors..."
     (
         re.compile(
             r'\b(?:a |an )?20\d{2}\s+(?:study|report|research|trial)\s+'
             r'(?:from|by|at|conducted by)\s+'
             r'(?:johns?\s+hopkins?|harvard|mayo\s+clinic|stanford|cdc|nih|aarp|'
-            r'university\s+of|american\s+(?:heart|college|medical))\b',
+            r'university\s+of|american\s+(?:heart|college|medical)|'
+            r'national\s+institute|department\s+of)\b',
             re.IGNORECASE | re.DOTALL
         ),
-        'Fabricated citation detected: specific year + institution + study — '
-        'use "research suggests" or "studies show" unless source is in research_context'
+        '[6-C] 연도+기관+연구 조합 — 할루시네이션 고위험. '
+        '"Research consistently shows..." 사용'
     ),
 
     # ── 7. 개인참조 2회 초과 (Personal Reference > 1) ────────────
@@ -214,15 +255,122 @@ _FACTUAL_ERROR_PATTERNS = [
     # 2회 이상이면 HARD BLOCK
 ]
 
-# 별도 처리 — 개인참조 횟수 감지 (패턴 리스트와 분리)
+# 별도 처리 — 개인참조 감지 (0회 허용 정책: 프롬프트가 NO I-REFERENCE로 변경됨)
 _PERSONAL_REF_RE = re.compile(
     r'\b(i\s+watched|i\s+saw|i\s+know|i\s+once|i\s+always|i\s+remember'
     r'|i\s+tried|i\s+learned|i\'ve|i\s+retired|when\s+i\s|i\s+helped'
     r'|i\'ve\s+sat|i\s+spent|i\s+worked|i\s+have\s+seen|i\s+have\s+watched'
     r'|i\s+can\'t|i\s+cannot|i\s+would|i\s+will|i\s+think|i\s+believe'
-    r'|i\s+suggest|i\s+recommend)\b',
+    r'|i\s+suggest|i\s+recommend|i\s+finally|when\s+i\s+finally'
+    r'|i\s+almost|i\s+found|i\s+discovered|i\s+realized)\b',
     re.IGNORECASE
 )
+
+# ─── 연간 수치 stale 감지 ─────────────────────────────────────
+# annual_rates.json의 이전 연도 수치가 글에 등장하면 HARD BLOCK
+def _load_stale_figure_checks() -> list:
+    """annual_rates.json 기반 이전 연도 수치 감지 패턴 생성"""
+    rates_path = Path(__file__).parent / 'data' / 'annual_rates.json'
+    if not rates_path.exists():
+        return []
+    try:
+        rates = json.loads(rates_path.read_text(encoding='utf-8'))
+    except Exception:
+        return []
+
+    checks = []
+    m = rates.get('medicare', {})
+    current_year = rates.get('_meta', {}).get('year', rates.get('year', 2026))
+    prev_year = current_year - 1
+
+    # Part B deductible: 2025=$257, 2026=$283
+    pb_deductible = m.get('part_b', {}).get('annual_deductible')
+    if pb_deductible:
+        # 이전 연도 알려진 값들
+        stale_pb = [v for v in [257, 226, 203, 185] if v != pb_deductible]
+        for old_val in stale_pb:
+            checks.append((
+                re.compile(rf'Part\s+B\b.{{0,60}}\$\s*{old_val}\b|\$\s*{old_val}\b.{{0,60}}Part\s+B\s+deductible', re.IGNORECASE),
+                f'Stale Part B deductible ${old_val} detected — {current_year} correct value is ${pb_deductible}'
+            ))
+
+    # Part A deductible: 2025=$1676, 2026=$1736
+    pa_deductible = m.get('part_a', {}).get('inpatient_hospital_deductible')
+    if pa_deductible:
+        stale_pa = [v for v in [1676, 1632, 1600, 1556] if v != pa_deductible]
+        for old_val in stale_pa:
+            checks.append((
+                re.compile(rf'Part\s+A\b.{{0,80}}\$\s*{old_val:,}\b|\$\s*{old_val:,}\b.{{0,80}}Part\s+A\s+(?:hospital\s+)?deductible', re.IGNORECASE),
+                f'Stale Part A deductible ${old_val:,} detected — {current_year} correct value is ${pa_deductible:,}'
+            ))
+
+    # ── IRA 기여 한도 (50세 이상) ─────────────────────────────────────────
+    # 2022=$6,000 / 2023=$6,500 / 2024+=$7,000 (50+: $8,000)
+    ira_section  = rates.get('ira_401k', {})
+    ira_50plus   = ira_section.get('ira_contribution_50_plus')
+    ira_under_50 = ira_section.get('ira_contribution_under_50')
+    if ira_50plus:
+        stale_ira_50 = [v for v in [7500, 7000, 6500, 6000, 5500] if v != ira_50plus]
+        for old_val in stale_ira_50:
+            checks.append((
+                re.compile(
+                    rf'\b(?:ira|roth\s+ira|traditional\s+ira)\b.{{0,80}}'
+                    rf'\$\s*{old_val:,}\b',
+                    re.IGNORECASE | re.DOTALL
+                ),
+                f'Stale IRA limit ${old_val:,} — {current_year}: under-50 ${ira_under_50:,} / 50+ ${ira_50plus:,}'
+            ))
+
+    # ── 401k 기여 한도 (50~59세 / 64세) ────────────────────────────────────
+    # 2022=$27,000 / 2023=$30,000 / 2024=$30,500 / 2025=$31,000(50-59,64)
+    contrib_50_59 = ira_section.get('401k_contribution_50_59_64')
+    if contrib_50_59:
+        stale_401k = [v for v in [30500, 30000, 27000, 26000, 25000] if v != contrib_50_59]
+        for old_val in stale_401k:
+            checks.append((
+                re.compile(
+                    rf'\b401[ck]\b.{{0,80}}\$\s*{old_val:,}\b',
+                    re.IGNORECASE | re.DOTALL
+                ),
+                f'Stale 401k contribution ${old_val:,} — {current_year} limit is ${contrib_50_59:,} (age 50-59/64)'
+            ))
+
+    # ── Social Security COLA ─────────────────────────────────────────────────
+    # 2024=3.2% / 2025=2.5% — "COLA of X%" 형태 오류 차단
+    ss   = rates.get('social_security', {})
+    cola = ss.get('cola_2026_percent') or ss.get(f'cola_{current_year}_percent')
+    if cola:
+        # 알려진 이전 COLA 값들 (잘못 쓰이면 차단)
+        stale_cola = [v for v in [3.2, 8.7, 5.9, 1.3] if abs(v - cola) > 0.01]
+        for old_val in stale_cola:
+            checks.append((
+                re.compile(
+                    rf'\bcola\b.{{0,60}}{re.escape(str(old_val))}\s*%'
+                    rf'|\b{re.escape(str(old_val))}\s*%\b.{{0,60}}cola\b',
+                    re.IGNORECASE | re.DOTALL
+                ),
+                f'Stale COLA figure {old_val}% — {current_year} COLA is {cola}%'
+            ))
+
+    # ── Medicare Advantage OOP 상한 ───────────────────────────────────────────
+    # 2025=$8,850 / 2026=$9,350 (in-network)
+    adv = m.get('advantage', {})
+    ma_oop = adv.get('max_oop_in_network')
+    if ma_oop:
+        stale_ma = [v for v in [8850, 8300, 7550] if v != ma_oop]
+        for old_val in stale_ma:
+            checks.append((
+                re.compile(
+                    rf'Medicare\s+Advantage\b.{{0,100}}\$\s*{old_val:,}\b'
+                    rf'|\$\s*{old_val:,}\b.{{0,80}}(?:Medicare\s+Advantage|MA\s+plan)',
+                    re.IGNORECASE | re.DOTALL
+                ),
+                f'Stale Medicare Advantage OOP cap ${old_val:,} — {current_year} in-network limit is ${ma_oop:,}'
+            ))
+
+    return checks
+
+_STALE_FIGURE_CHECKS = _load_stale_figure_checks()
 
 
 class PublishBlocked(Exception):
@@ -275,18 +423,20 @@ def save_published_title(title: str) -> None:
 
 
 def _check_duplicate_title(title: str, threshold: float = 0.6) -> None:
-    """기존 발행 제목과 Jaccard 유사도 0.6 이상이면 SOFT_WARN 반환."""
+    """기존 발행 제목과 2-gram Jaccard 유사도 threshold 이상이면 예외 발생.
+    과거엔 SOFT_WARN(경고만)이라 같은 주제가 재발행되는 걸 못 막았음 — HARD_BLOCK으로 전환."""
     published = load_published_titles()
     if not published:
-        return None
+        return
     new_ngrams = _title_ngrams(title)
     for entry in published:
         old_title   = entry.get('title', '')
         old_ngrams  = _title_ngrams(old_title)
         similarity  = _jaccard(new_ngrams, old_ngrams)
         if similarity >= threshold:
-            return f'[SOFT] 유사 제목 감지 (유사도 {similarity:.0%}): "{old_title}"'
-    return None
+            raise PublishBlocked(
+                f'[HARD] 유사 제목 감지 (유사도 {similarity:.0%}): "{old_title}" — 중복 주제 재생성 필요'
+            )
 
 
 def run(article: dict) -> dict:
@@ -332,15 +482,21 @@ def run(article: dict) -> dict:
     hard_checks.append('TITLE_HTML: PASS')
 
     # ═══════════════════════════════════════════════════════
+    # HARD CHECK 1.5 — 중복 제목 감지 (2-gram Jaccard 유사도)
+    # ═══════════════════════════════════════════════════════
+    _check_duplicate_title(title)
+    hard_checks.append('DUPLICATE_TITLE: PASS')
+
+    # ═══════════════════════════════════════════════════════
     # HARD CHECK 2 — 최소 단어수 (카테고리별)
-    #   A/B : HARD 900 / SOFT 1,400
-    #   C/D : HARD 750 / SOFT 1,100
+    #   A/B : HARD 1,200 / SOFT 1,600  (YMYL: Medicare/Retirement — Google 신뢰도 기준 상향)
+    #   C/D : HARD 1,000 / SOFT 1,400  (Aging in Place / Health)
     # ═══════════════════════════════════════════════════════
     category_key  = article.get('category_key', '').upper()
     _is_cd        = category_key in ('C', 'D')
-    hard_min_wc   = 750  if _is_cd else 900
-    soft_min_wc   = 1100 if _is_cd else 1400
-    soft_range_lbl = '1,100-1,400' if _is_cd else '1,400-1,800'
+    hard_min_wc   = 1000 if _is_cd else 1200
+    soft_min_wc   = 1400 if _is_cd else 1600
+    soft_range_lbl = '1,400-1,800' if _is_cd else '1,600-2,000'
 
     wc = _word_count(html)
     logger.info(f'[GOVERNOR] 단어수: {wc} (카테고리: {category_key or "unknown"})')
@@ -372,24 +528,56 @@ def run(article: dict) -> dict:
     # ═══════════════════════════════════════════════════════
     # HARD CHECK 5 — 사실 오류 패턴
     # ═══════════════════════════════════════════════════════
-    plain_text = BeautifulSoup(html, 'html.parser').get_text()
+    # <hr> 이후는 면책문구 + Keep Reading 영역 — 팩트체크 대상 제외
+    _soup_full = BeautifulSoup(html, 'html.parser')
+    _hr = _soup_full.find('hr')
+    _body_html = str(_hr.find_previous_siblings()) if _hr else html
+    # 본문만 plain text 추출 (Keep Reading / 면책문구 제외)
+    _body_soup = BeautifulSoup(html, 'html.parser')
+    if _hr:
+        for el in _hr.find_all_next():
+            el.decompose()
+        _hr.decompose()
+    plain_text = _body_soup.get_text()
     for pattern, desc in _FACTUAL_ERROR_PATTERNS:
         if pattern.search(plain_text):
             raise PublishBlocked(f'[HARD] 사실 오류 패턴 감지: {desc}')
     hard_checks.append('FACTUAL_ERRORS: PASS')
 
     # ═══════════════════════════════════════════════════════
-    # HARD CHECK 6 — 개인참조 횟수 (정확히 1회만 허용)
-    # "I watched", "I saw", "I tried" 등 1인칭 서사 표현
-    # 2회 이상이면 독자 신뢰도 / YMYL 정책 위반
+    # HARD CHECK 6 — 개인참조 0회 정책
+    # 프롬프트가 NO I-REFERENCE로 변경됨 (AdSense Helpful Content)
+    # AI가 경험 있는 척 1인칭 서사 작성 = Google 신뢰도 패널티 위험
     # ═══════════════════════════════════════════════════════
     personal_matches = _PERSONAL_REF_RE.findall(plain_text)
-    if len(personal_matches) > 1:
+    if len(personal_matches) > 0:
         raise PublishBlocked(
-            f'[HARD] 개인참조 {len(personal_matches)}회 감지 (허용: 1회): '
-            f'{personal_matches[:4]} — 프롬프트 PERSONAL REFERENCE 규칙 위반'
+            f'[HARD] 개인참조 {len(personal_matches)}회 감지 (허용: 0회): '
+            f'{personal_matches[:4]} — AI 1인칭 서사 금지 (AdSense Helpful Content 정책)'
         )
-    hard_checks.append(f'PERSONAL_REF({len(personal_matches)}): PASS')
+    hard_checks.append('PERSONAL_REF(0): PASS')
+
+    # ═══════════════════════════════════════════════════════
+    # HARD CHECK 7 — 연간 수치 stale 감지
+    # annual_rates.json 기반 이전 연도 수치 사용 차단
+    # ═══════════════════════════════════════════════════════
+    for pattern, desc in _STALE_FIGURE_CHECKS:
+        if pattern.search(plain_text):
+            raise PublishBlocked(f'[HARD] 수치 오류: {desc}')
+    hard_checks.append(f'STALE_FIGURES({len(_STALE_FIGURE_CHECKS)} checks): PASS')
+
+    # ═══════════════════════════════════════════════════════
+    # HARD CHECK 8 — 공식 출처 링크 최소 2개 (E-E-A-T)
+    # medicare.gov / ssa.gov / cms.gov 링크가 없으면 AdSense 심사 탈락
+    # ═══════════════════════════════════════════════════════
+    _OFFICIAL_DOMAINS = ['medicare.gov', 'ssa.gov', 'cms.gov', 'shiphelp.org']
+    official_links = [d for d in _OFFICIAL_DOMAINS if d in html.lower()]
+    if len(official_links) < 1:
+        raise PublishBlocked(
+            '[HARD] 공식 출처 링크 없음 — medicare.gov / ssa.gov / cms.gov 중 '
+            '최소 1개 이상 본문에 삽입 필요 (AdSense E-E-A-T 요건)'
+        )
+    hard_checks.append(f'OFFICIAL_LINKS({len(official_links)}개): PASS')
 
     # ═══════════════════════════════════════════════════════
     # SOFT CHECK 1 — 목표 단어수 미달 (카테고리별)
@@ -444,14 +632,6 @@ def run(article: dict) -> dict:
         msg = '[SOFT] 더미 링크(example.com) 감지 — publisher_bot이 비활성 버튼으로 렌더링'
         logger.warning(msg)
         warnings.append(msg)
-
-    # ═══════════════════════════════════════════════════════
-    # SOFT CHECK 7 — 중복 제목 감지 (3-gram Jaccard 유사도)
-    # ═══════════════════════════════════════════════════════
-    dup_msg = _check_duplicate_title(title)
-    if dup_msg:
-        logger.warning(dup_msg)
-        warnings.append(dup_msg)
 
     # ═══════════════════════════════════════════════════════
     # 결과 요약
