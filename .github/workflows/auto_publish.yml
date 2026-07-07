@@ -36,6 +36,8 @@ jobs:
           LINK_RETIREMENT: ${{ secrets.LINK_RETIREMENT }}
           LINK_AGING: ${{ secrets.LINK_AGING }}
           LINK_HEALTH: ${{ secrets.LINK_HEALTH }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           printf 'GOOGLE_CLIENT_ID=%s\n' $GOOGLE_CLIENT_ID >> .env
           printf 'GOOGLE_CLIENT_SECRET=%s\n' $GOOGLE_CLIENT_SECRET >> .env
@@ -50,6 +52,8 @@ jobs:
           printf 'LINK_RETIREMENT=%s\n' $LINK_RETIREMENT >> .env
           printf 'LINK_AGING=%s\n' $LINK_AGING >> .env
           printf 'LINK_HEALTH=%s\n' $LINK_HEALTH >> .env
+          printf 'TELEGRAM_BOT_TOKEN=%s\n' $TELEGRAM_BOT_TOKEN >> .env
+          printf 'TELEGRAM_CHAT_ID=%s\n' $TELEGRAM_CHAT_ID >> .env
 
       - name: Run auto publish
         run: python auto_publish.py
