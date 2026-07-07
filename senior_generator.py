@@ -773,14 +773,17 @@ def generate_post(
     research_context = fetch_research(primary_keyword)
 
     # 카테고리별 목표 단어수 결정
+    # min_words는 publish_governor.py의 HARD 임계치(hard_min_wc)와 반드시 일치시킬 것 —
+    # 여기가 governor보다 낮으면 900~1199단어(A/B) 구간에서 재시도 없이 통과된 글이
+    # 최종 게이트에서 뒤늦게 차단되어 파이프라인 전체가 그대로 실패로 끝남 (재시도 기회 낭비)
     if category_key in ('C', 'D'):
         word_target = '1,100-1,400 words'
         deep_dive   = '650-800 words'
-        min_words   = 750   # governor HARD 임계치도 낮춤
+        min_words   = 1000   # publish_governor.py hard_min_wc(C/D)와 동일
     else:
         word_target = '1,400-1,800 words'
         deep_dive   = '850-1,000 words'
-        min_words   = 900
+        min_words   = 1200   # publish_governor.py hard_min_wc(A/B)와 동일
 
     system_prompt = build_system_prompt(category_key=category_key)
     base_user_prompt = build_user_prompt(
