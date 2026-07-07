@@ -518,6 +518,33 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
 
 # ─── Blogger API ──────────────────────────────────────
 
+def title_already_exists(service, blog_id: str, title: str) -> bool:
+    """동일/유사 제목이 Blogger에 이미 발행됐는지 확인.
+    완전 일치(대소문자 무시) 또는 핵심 단어 80% 이상 겹치면 True 반환."""
+    if not title:
+        return False
+    try:
+        # 제목 첫 5단어로 검색 (Blogger search API 한계 보완)
+        query = ' '.join(title.split()[:5])
+        results = service.posts().search(blogId=blog_id, q=query, fetchBodies=False).execute()
+        existing = results.get('items', [])
+        title_lower = title.lower().strip()
+        for post in existing:
+            existing_title = post.get('title', '').lower().strip()
+            # 완전 일치
+            if existing_title == title_lower:
+                return True
+            # 핵심 단어 80% 이상 겹침 (조사/관사 제거 후 비교)
+            stop = {'the','a','an','of','in','for','to','and','or','with','on','at','by','how','what','why','when','is','are','do','does'}
+            t_words = set(title_lower.split()) - stop
+            e_words = set(existing_title.split()) - stop
+            if t_words and len(t_words & e_words) / len(t_words) >= 0.8:
+                return True
+    except Exception as e:
+        logger.warning(f'중복 체크 오류 (무시하고 계속): {e}')
+    return False
+
+
 def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> dict:
     """Blogger API v3로 글 발행"""
     service = build('blogger', 'v3', credentials=creds)
@@ -537,11 +564,21 @@ def publish_to_blogger(article: dict, html_content: str, creds: Credentials) -> 
 
     title = article.get('title', '').strip()[:150]  # 제목 길이 제한
 
+    # ── 중복 제목 체크 ───────────────────────────────────
+    if title_already_exists(service, blog_id, title):
+        raise ValueError(f'[중복 차단] 동일/유사 제목이 이미 발행됨: "{title}" — 발행 취소')
+
     body = {
         'title': title,
         'content': html_content,
         'labels': labels,
     }
+
+    # 검색 설명(searchDescription) — AI가 생성한 meta_description을 실제 Blogger 검색 스니펫에 반영
+    # 기존엔 JSON-LD의 description에만 재활용되고 Blogger 자체 필드엔 전송이 안 됐음
+    meta_desc = article.get('meta', '').strip()[:150]
+    if meta_desc:
+        body['searchDescription'] = meta_desc
 
     # 썸네일 이미지 등록 (Blogger 포스트 목록에 섬네일 표시)
     img_url = article.get('_img_url')
