@@ -87,7 +87,11 @@ class ClaudeWriter(BaseWriter):
                 'messages': [{'role': 'user', 'content': prompt}],
             }
             if system:
-                kwargs['system'] = system
+                # 프롬프트 캐싱 — 시스템 프롬프트(약 4,000토큰)가 재시도마다 그대로 재전송되는데
+                # 캐싱 없이는 매번 전액 과금. cache_control로 5분 TTL 캐싱하면 재시도 시 90% 할인.
+                kwargs['system'] = [
+                    {'type': 'text', 'text': system, 'cache_control': {'type': 'ephemeral'}}
+                ]
             message = client.messages.create(**kwargs)
             return message.content[0].text
         except Exception as e:
