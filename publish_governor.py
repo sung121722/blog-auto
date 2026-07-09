@@ -546,8 +546,11 @@ def run(article: dict) -> dict:
         _hr.decompose()
     plain_text = _body_soup.get_text()
     for pattern, desc in _FACTUAL_ERROR_PATTERNS:
-        if pattern.search(plain_text):
-            raise PublishBlocked(f'[HARD] 사실 오류 패턴 감지: {desc}')
+        m = pattern.search(plain_text)
+        if m:
+            raise PublishBlocked(
+                f'[HARD] 사실 오류 패턴 감지: {desc} — 매칭된 문장: "{m.group(0)[:150]}"'
+            )
     hard_checks.append('FACTUAL_ERRORS: PASS')
 
     # ═══════════════════════════════════════════════════════
@@ -555,11 +558,16 @@ def run(article: dict) -> dict:
     # 프롬프트가 NO I-REFERENCE로 변경됨 (AdSense Helpful Content)
     # AI가 경험 있는 척 1인칭 서사 작성 = Google 신뢰도 패널티 위험
     # ═══════════════════════════════════════════════════════
-    personal_matches = _PERSONAL_REF_RE.findall(plain_text)
-    if len(personal_matches) > 0:
+    personal_hits = list(_PERSONAL_REF_RE.finditer(plain_text))
+    if personal_hits:
+        contexts = [
+            plain_text[max(0, m.start() - 40):m.end() + 40].strip()
+            for m in personal_hits[:3]
+        ]
         raise PublishBlocked(
-            f'[HARD] 개인참조 {len(personal_matches)}회 감지 (허용: 0회): '
-            f'{personal_matches[:4]} — AI 1인칭 서사 금지 (AdSense Helpful Content 정책)'
+            f'[HARD] 개인참조 {len(personal_hits)}회 감지 (허용: 0회): '
+            f'{[m.group(0) for m in personal_hits[:4]]} — 문맥: {contexts} '
+            f'— AI 1인칭 서사 금지 (AdSense Helpful Content 정책)'
         )
     hard_checks.append('PERSONAL_REF(0): PASS')
 
