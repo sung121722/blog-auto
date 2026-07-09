@@ -35,18 +35,24 @@ def get_used_keywords() -> set:
             if datetime.fromisoformat(meta['used_at']) > cutoff}
 
 
-def pick_fresh_keywords(category_key: str, n: int = 4) -> list:
-    used = get_used_keywords()
+def pick_fresh_keywords(category_key: str, n: int = 4, exclude: set | None = None) -> list:
+    used = get_used_keywords() | (exclude or set())
     pool = KEYWORDS.get(category_key, [])
     fresh = [kw for kw in pool if kw not in used]
     if len(fresh) < n:
-        fresh = pool  # 모두 소진 시 리셋
+        fresh = [kw for kw in pool if kw not in (exclude or set())] or pool  # 모두 소진 시 리셋
     return random.sample(fresh, min(n, len(fresh)))
 
 
-def collect_keywords_for_today() -> dict:
-    category_key, category_info = get_category_for_today()
-    keywords = pick_fresh_keywords(category_key, n=4)
+def collect_keywords_for_today(category_key: str | None = None, exclude_primary: set | None = None) -> dict:
+    """category_key 지정 시 오늘의 카테고리 대신 사용 (재시도 시 동일 카테고리 유지용).
+    exclude_primary 지정 시 해당 키워드들은 primary/supporting 후보에서 제외 (중복 재시도용)."""
+    if category_key is None:
+        category_key, category_info = get_category_for_today()
+    else:
+        from senior_config import CATEGORIES
+        category_info = CATEGORIES[category_key]
+    keywords = pick_fresh_keywords(category_key, n=4, exclude=exclude_primary)
     keywords.sort(key=lambda k: len(k), reverse=True)  # 롱테일 우선
     return {
         'category_key': category_key,

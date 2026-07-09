@@ -127,27 +127,91 @@ def make_slug(title: str) -> str:
 # 메인 파이프라인
 # ─────────────────────────────────────────
 
+def _is_duplicate_keyword(keyword: str, published_titles: list, threshold: float = 0.5) -> bool:
+    """키워드가 기존 발행 제목과 너무 유사하면 True — 생성 전 API 호출 낭비 예방.
+    (제목은 primary_keyword를 그대로 반영해 짓도록 지시하므로 키워드 단위 비교로도 유효)"""
+    kw_ngrams = publish_governor._title_ngrams(keyword)
+    for entry in published_titles:
+        old_ngrams = publish_governor._title_ngrams(entry.get('title', ''))
+        if publish_governor._jaccard(kw_ngrams, old_ngrams) >= threshold:
+            return True
+    return False
+
+
+def _pick_nonduplicate_keywords(category_key: str | None, max_attempts: int = 5) -> dict:
+    """중복 발행 제목과 겹치지 않는 키워드 세트를 뽑을 때까지 재시도 (API 호출 없이 사전 필터링)."""
+    published_titles = publish_governor.load_published_titles()
+    excluded: set = set()
+    collected = collect_keywords_for_today(category_key=category_key)
+
+    for attempt in range(1, max_attempts + 1):
+        if not _is_duplicate_keyword(collected['primary_keyword'], published_titles):
+            return collected
+        logger.warning(
+            f'[사전필터] 키워드가 기존 발행 제목과 유사 — 재선택 (시도 {attempt}/{max_attempts}): '
+            f'"{collected["primary_keyword"]}"'
+        )
+        excluded.add(collected['primary_keyword'])
+        collected = collect_keywords_for_today(
+            category_key=collected['category_key'], exclude_primary=excluded
+        )
+
+    logger.warning('[사전필터] 중복 없는 키워드를 못 찾음 — 마지막 후보로 진행')
+    return collected
+
+
 def run():
     logger.info('=' * 55)
     logger.info('  Healthy After 50 — Pipeline Start')
     logger.info('=' * 55)
 
-    # 1. 키워드 수집 (60일 이력 기반 중복 제거)
-    collected = collect_keywords_for_today()
-    category_key = collected['category_key']
-    category_info = collected['category_info']
+    MAX_RETRIES = 2
+    category_key_locked = None  # 재시도 시 같은 카테고리 유지
+    tried_keywords: set = set()
+    result = None
 
-    logger.info(f'카테고리: {category_key} / {category_info["name"]}')
-    logger.info(f'Primary Keyword: {collected["primary_keyword"]}')
+    for attempt in range(1, MAX_RETRIES + 1):
+        # 1. 키워드 수집 — 기존 발행 제목과 겹치지 않는 키워드로 사전 필터링
+        collected = _pick_nonduplicate_keywords(category_key_locked)
+        category_key = collected['category_key']
+        category_info = collected['category_info']
+        category_key_locked = category_key
+        tried_keywords.add(collected['primary_keyword'])
 
-    # 2. 콘텐츠 생성 — collector가 선택한 키워드 직접 전달 (이력 우회 방지)
-    logger.info('글 생성 중...')
-    post = generate_post(
-        category_key=category_key,
-        primary_keyword=collected['primary_keyword'],
-        supporting_keywords=collected['supporting_keywords'],
-    )
+        logger.info(f'카테고리: {category_key} / {category_info["name"]} (시도 {attempt}/{MAX_RETRIES})')
+        logger.info(f'Primary Keyword: {collected["primary_keyword"]}')
 
+        # 2. 콘텐츠 생성 — collector가 선택한 키워드 직접 전달 (이력 우회 방지)
+        logger.info('글 생성 중...')
+        post = generate_post(
+            category_key=category_key,
+            primary_keyword=collected['primary_keyword'],
+            supporting_keywords=collected['supporting_keywords'],
+        )
+
+        result = _publish_generated_post(post, category_key, category_info, collected)
+        if result is not None:
+            break
+        if attempt < MAX_RETRIES:
+            logger.warning(f'[Governor 차단] 시도 {attempt + 1}회차로 재시도 (다른 키워드)')
+
+    if result is None:
+        logger.error(f'{MAX_RETRIES}회 모두 Governor에서 차단됨 — 오늘은 발행 없이 종료')
+        try:
+            publisher_bot.send_telegram(
+                f'🚫 {MAX_RETRIES}회 재시도 후 발행 실패 — 오늘은 초안 없이 종료\n'
+                f'시도한 키워드: {", ".join(tried_keywords)}'
+            )
+        except Exception:
+            pass
+        return
+
+    logger.info('=' * 55)
+    return result
+
+
+def _publish_generated_post(post: dict, category_key: str, category_info: dict, collected: dict):
+    """생성된 post를 이미지/HTML 조립 후 Governor 검사·발행. Governor 차단 시 None 반환(재시도 유도)."""
     # 3. 이미지 수집 (URL 방식) — 항상 이미지 보장 (비상 풀 최종 백업)
     logger.info('이미지 가져오는 중...')
     image_query = post.get('image_query', 'older adult at home natural morning light')
@@ -190,7 +254,7 @@ def run():
         draft_path = publish_governor.save_draft(article, str(e))
         logger.error(f'[GOVERNOR] 발행 차단: {e}')
         logger.error(f'[GOVERNOR] Draft 저장 완료: {draft_path}')
-        raise
+        return None  # 상위 run()의 재시도 루프로 신호 전달
 
     # 7. Blogger 발행
     logger.info(f'발행 중: {post["title"]}')
@@ -208,7 +272,6 @@ def run():
     else:
         logger.warning('발행 실패 또는 검토 대기')
 
-    logger.info('=' * 55)
     return result
 
 
