@@ -210,19 +210,25 @@ _FACTUAL_ERROR_PATTERNS = [
     # BAD: "Harrison Bay Senior Living, in a 2026 article, highlights..."
     # BAD: "According to Barnstable County..."
     # OK:  "According to the CDC..." / "Medicare.gov states..."
+    # OK:  "According to Medicaid rules, nursing home residents must..." (공식 제도명이 이미 인용 대상)
+    # OK:  "A nursing home stay often shows..." (일반적 서술, 특정 시설/기관 인용 아님)
+    # v2 수정: 혜택정보 키워드(Medicaid/VA 등) 추가 후 오탐 다발 확인되어 두 가지 가드 추가
+    #   1. 인용 동사와 기관어 사이에 공식 출처명(medicaid/medicare/cdc 등)이 있으면 제외
+    #   2. 기관어 앞에 관사(a/an/the)가 오면 일반 명사로 판단해 제외 (실제 시설명 인용이 아님)
     (
         re.compile(
             # 패턴A: 동사 먼저 → 기관명 (According to Barnstable County)
             r'(?:'
             r'\b(?:according to|per|as noted by|as stated by|found that|reports? that)\b'
-            r'.{0,80}'
+            r'(?:(?!medicaid|medicare|cdc\b|ssa\b|cms\b|nih\b|\.gov|official).){0,80}'
             r'\b(?:senior living|assisted living|memory care|nursing home|'
             r'county|township|borough|village|city of|town of)\b'
             r'|'
             # 패턴B: 기관명 먼저 → 동사 (Harrison Bay Senior Living ... highlights)
+            r'(?<!\ba )(?<!\ban )(?<!\bthe )'
             r'\b(?:senior living|assisted living|memory care|nursing home)\b'
             r'[^\n]{0,80}'
-            r'\b(?:highlights?|notes?|reports?|states?|finds?|shows?|suggests?|'
+            r'\b(?:highlights?|notes?|reports?|finds?|shows?|suggests?|'
             r'recommends?|emphasize?s?|points? out)\b'
             r')',
             re.IGNORECASE
