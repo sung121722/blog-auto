@@ -803,6 +803,7 @@ def generate_post(
     writer = EngineLoader().get_writer(category_key=category_key)
 
     post_data = None
+    success = False  # 검증까지 전부 통과한 시도가 있었는지 — post_data 존재 여부만으론 부족
     feedback = ''  # 이전 시도 실패 이유 → 다음 시도에 피드백
     for attempt in range(1, 4):  # 최대 3회 시도
         # 재시도 시 실패 원인을 프롬프트 앞에 명시 → 맹목적 반복 방지
@@ -816,19 +817,21 @@ def generate_post(
             logger.warning(f'빈 응답 (시도 {attempt}/3)')
             continue
         try:
-            post_data = _parse_json(raw)
-            post_data = _sanitize_year(post_data)       # 과거 연도 강제 교정
-            post_data = _sanitize_style(post_data)      # em dash 문맥 기반 교정
-            _assert_min_words(post_data, min_words=min_words) # 잘림 감지 (카테고리별)
-            _assert_english_only(post_data)             # CJK 문자 차단
-            _check_banned_phrases(post_data)            # HARD 금지 문구 차단
+            candidate = _parse_json(raw)
+            candidate = _sanitize_year(candidate)       # 과거 연도 강제 교정
+            candidate = _sanitize_style(candidate)      # em dash 문맥 기반 교정
+            _assert_min_words(candidate, min_words=min_words) # 잘림 감지 (카테고리별)
+            _assert_english_only(candidate)             # CJK 문자 차단
+            _check_banned_phrases(candidate)            # HARD 금지 문구 차단
+            post_data = candidate  # 검증 전부 통과한 경우에만 채택
+            success = True
             break
         except RuntimeError as e:
             feedback = str(e)
             logger.warning(f'실패 (시도 {attempt}/3): {e}')
 
-    if not post_data:
-        raise RuntimeError('콘텐츠 생성 실패: 3회 모두 실패')
+    if not success:
+        raise RuntimeError(f'콘텐츠 생성 실패: 3회 모두 실패 (마지막 사유: {feedback})')
     post_data['category_key']   = category_key
     post_data['category_info']  = category_info
     post_data['primary_keyword'] = primary_keyword

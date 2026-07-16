@@ -183,11 +183,17 @@ def run():
 
         # 2. 콘텐츠 생성 — collector가 선택한 키워드 직접 전달 (이력 우회 방지)
         logger.info('글 생성 중...')
-        post = generate_post(
-            category_key=category_key,
-            primary_keyword=collected['primary_keyword'],
-            supporting_keywords=collected['supporting_keywords'],
-        )
+        try:
+            post = generate_post(
+                category_key=category_key,
+                primary_keyword=collected['primary_keyword'],
+                supporting_keywords=collected['supporting_keywords'],
+            )
+        except RuntimeError as e:
+            logger.error(f'[생성 실패] {e}')
+            if attempt < MAX_RETRIES:
+                logger.warning(f'[생성 실패] 시도 {attempt + 1}회차로 재시도 (다른 키워드)')
+            continue
 
         result = _publish_generated_post(post, category_key, category_info, collected)
         if result is not None:
