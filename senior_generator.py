@@ -200,6 +200,10 @@ Never write "I", "my", "I've", "I'd", "I tried", "when I", "I remember", or any 
 This blog does not have a named author persona. Use "you" and "your" throughout.
 Replace any urge to say "I've seen this" with: "Many people in this situation find..." or "Benefits advisors often see..."
 Replace any urge to say "In my experience" with: "In practice..." or "What typically happens is..."
+This rule also applies to hypothetical quotes depicting what the reader might think or say.
+BAD: "You might be thinking, 'I can't afford this.'"
+GOOD: "If affording this feels impossible right now, you're not alone."
+Never construct a sentence where the word "I" appears at all, even inside a quote attributed to the reader.
 
 SHOW EXPERTISE WITHOUT FIRST-PERSON:
 BAD:  "When I signed up for Medicare Part B, I almost missed the deadline."
