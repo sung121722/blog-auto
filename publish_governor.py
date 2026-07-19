@@ -584,11 +584,16 @@ def run(article: dict) -> dict:
     # HARD CHECK 8 — 공식 출처 링크 최소 2개 (E-E-A-T)
     # medicare.gov / ssa.gov / cms.gov 링크가 없으면 AdSense 심사 탈락
     # ═══════════════════════════════════════════════════════
-    _OFFICIAL_DOMAINS = ['medicare.gov', 'ssa.gov', 'cms.gov', 'shiphelp.org']
+    _OFFICIAL_DOMAINS = [
+        # Medicare / Insurance / Social Security (A/B 카테고리)
+        'medicare.gov', 'ssa.gov', 'cms.gov', 'shiphelp.org',
+        # 건강·웰니스 공식 기관 (C/D 카테고리 — 그리프·탈수·운동·영양 등)
+        'cdc.gov', 'nih.gov', 'nia.nih.gov', 'medlineplus.gov', 'acl.gov',
+    ]
     official_links = [d for d in _OFFICIAL_DOMAINS if d in html.lower()]
     if len(official_links) < 1:
         raise PublishBlocked(
-            '[HARD] 공식 출처 링크 없음 — medicare.gov / ssa.gov / cms.gov 중 '
+            '[HARD] 공식 출처 링크 없음 — medicare.gov / ssa.gov / cdc.gov / nih.gov 중 '
             '최소 1개 이상 본문에 삽입 필요 (AdSense E-E-A-T 요건)'
         )
     hard_checks.append(f'OFFICIAL_LINKS({len(official_links)}개): PASS')

@@ -297,19 +297,34 @@ Every article MUST contain at least 2 hyperlinks to official government sources 
 <a href="URL" rel="noopener noreferrer" target="_blank">anchor text</a>
 
 USE THESE LINKS (pick the ones most relevant to the article topic):
+
+Medicare & Insurance (A/B category or articles mentioning Medicare):
 - Medicare appeals:     <a href="https://www.medicare.gov/claims-appeals" rel="noopener noreferrer" target="_blank">Medicare.gov claims and appeals</a>
 - Medicare costs:       <a href="https://www.medicare.gov/basics/costs/medicare-costs" rel="noopener noreferrer" target="_blank">official 2026 Medicare costs</a>
 - Medicare plan finder: <a href="https://www.medicare.gov/plan-compare" rel="noopener noreferrer" target="_blank">Medicare Plan Finder</a>
-- Social Security:      <a href="https://www.ssa.gov/benefits/retirement/" rel="noopener noreferrer" target="_blank">Social Security retirement benefits</a>
-- My SS account:        <a href="https://www.ssa.gov/myaccount/" rel="noopener noreferrer" target="_blank">my Social Security account</a>
-- SS benefit estimator: <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a>
 - Medicare Part D:      <a href="https://www.medicare.gov/drug-coverage-part-d" rel="noopener noreferrer" target="_blank">Medicare Part D drug coverage</a>
 - CMS 2026 costs:       <a href="https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles" rel="noopener noreferrer" target="_blank">CMS 2026 Medicare premiums and deductibles</a>
 - SHIP counselors:      <a href="https://www.shiphelp.org" rel="noopener noreferrer" target="_blank">free SHIP Medicare counseling</a>
 - Nursing home compare: <a href="https://www.medicare.gov/care-compare/" rel="noopener noreferrer" target="_blank">Medicare Care Compare</a>
 
+Social Security (A/B category or retirement topics):
+- Social Security:      <a href="https://www.ssa.gov/benefits/retirement/" rel="noopener noreferrer" target="_blank">Social Security retirement benefits</a>
+- My SS account:        <a href="https://www.ssa.gov/myaccount/" rel="noopener noreferrer" target="_blank">my Social Security account</a>
+- SS benefit estimator: <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a>
+
+Health & Wellness (C/D category — grief, exercise, nutrition, dehydration, mental health, sleep, etc.):
+- CDC fall prevention:  <a href="https://www.cdc.gov/falls/index.html" rel="noopener noreferrer" target="_blank">CDC fall prevention for older adults</a>
+- CDC physical activity:<a href="https://www.cdc.gov/physicalactivity/basics/older_adults/index.htm" rel="noopener noreferrer" target="_blank">CDC physical activity guidelines for older adults</a>
+- CDC healthy aging:    <a href="https://www.cdc.gov/aging/index.html" rel="noopener noreferrer" target="_blank">CDC healthy aging resources</a>
+- NIA exercise:         <a href="https://www.nia.nih.gov/health/exercise-physical-activity" rel="noopener noreferrer" target="_blank">NIH exercise and physical activity guide</a>
+- NIA grief/loss:       <a href="https://www.nia.nih.gov/health/end-of-life/grief-loss-older-adults" rel="noopener noreferrer" target="_blank">NIH grief and loss in older adults</a>
+- NIA nutrition:        <a href="https://www.nia.nih.gov/health/nutrition" rel="noopener noreferrer" target="_blank">NIH nutrition and healthy eating for seniors</a>
+- NIA sleep:            <a href="https://www.nia.nih.gov/health/sleep" rel="noopener noreferrer" target="_blank">NIH sleep and aging guide</a>
+- MedlinePlus:          <a href="https://medlineplus.gov/seniorshealth.html" rel="noopener noreferrer" target="_blank">MedlinePlus senior health resources</a>
+
 Place these links naturally inside sentences — not as a separate "Resources" section.
-Example: "You can check your projected benefit at any age using the <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a> — it takes about three minutes."
+Example (Medicare): "You can check your projected benefit at any age using the <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a> — it takes about three minutes."
+Example (Health): "The <a href="https://www.nia.nih.gov/health/end-of-life/grief-loss-older-adults" rel="noopener noreferrer" target="_blank">NIH grief and loss guide</a> outlines the most common physical symptoms."
 NEVER fabricate a URL. Only use the exact URLs listed above.
 
 PART 4: SOFT CLOSE (~10% / 150 words)
