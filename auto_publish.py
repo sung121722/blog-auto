@@ -246,10 +246,10 @@ def _publish_generated_post(post: dict, category_key: str, category_info: dict, 
         '_fixed_labels':  fixed_labels,           # 고정 카테고리 라벨 (publisher_bot이 추가)
         'corner':         category_info['name'],
         'category_key':   category_key,           # A/B/C/D — 내부링크 카테고리 매칭용
-        'body':           '',                     # HTML 직접 사용
+        'body':           re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', full_html)).strip(),  # 안전장치 키워드 검사용 순수 텍스트
         '_html_content':  full_html,              # publisher_bot이 이걸 우선 사용
         '_img_url':       img_url,                # Blogger 썸네일 등록용 (None이면 생략)
-        'quality_score':  80,                     # 안전장치 통과
+        'quality_score':  80,                     # 아래 Governor 통과 후 실제 값으로 갱신됨
         'sources':        [],
         'disclaimer':     '',
     }
@@ -264,6 +264,9 @@ def _publish_generated_post(post: dict, category_key: str, category_info: dict, 
         logger.error(f'[GOVERNOR] 발행 차단: {e}')
         logger.error(f'[GOVERNOR] Draft 저장 완료: {draft_path}')
         return None  # 상위 run()의 재시도 루프로 신호 전달
+
+    # Governor 경고 개수 기반 실제 품질 점수 (안전장치 min_quality_score_for_auto가 실효성을 갖도록)
+    article['quality_score'] = max(50, 100 - len(gov_result['warnings']) * 10)
 
     # 7. Blogger 발행
     logger.info(f'발행 중: {post["title"]}')

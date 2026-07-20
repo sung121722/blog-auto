@@ -42,7 +42,11 @@ def pick_fresh_keywords(category_key: str, n: int = 4, exclude: set | None = Non
     pool = KEYWORDS.get(category_key, [])
     fresh = [kw for kw in pool if kw not in used]
     if len(fresh) < n:
-        fresh = [kw for kw in pool if kw not in (exclude or set())] or pool  # 모두 소진 시 리셋
+        # 60일 이력 기준으로 다 소진됨 — exclude만 제외하고, 가장 오래 전에 쓴 키워드들 중에서만 재선택
+        candidates = [kw for kw in pool if kw not in (exclude or set())] or pool
+        history = load_history()
+        candidates.sort(key=lambda kw: history.get(kw, {}).get('used_at', ''))  # 없거나 오래된 것 우선
+        fresh = candidates[:max(n * 2, n)]
     return random.sample(fresh, min(n, len(fresh)))
 
 

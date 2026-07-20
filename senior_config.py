@@ -310,11 +310,11 @@ HOOK_TYPES = {
 HOOK_ANGLES = {
     'A': {  # Medicare & Senior Living
         'misconception': [
-            "Most people assume they can sign up for Medicare any time after 65. That's not how it works, and the penalty for getting it wrong follows you permanently.",
-            "Most people think Plan G is always the best Medicare supplement. For some people, Plan N saves real money every year.",
+            "There's a common assumption that Medicare enrollment can happen any time after 65. That's not how it works, and the penalty for getting it wrong follows you permanently.",
+            "Plan G gets recommended as the default Medicare supplement choice. For some people, Plan N saves real money every year.",
             "Most people believe Medicare covers everything once they turn 65. The gaps in coverage are where the expensive surprises happen.",
-            "Most people assume their employer coverage automatically coordinates with Medicare at 65. It doesn't always work that way.",
-            "Most people assume Medicare Advantage and Original Medicare are basically the same thing with different names. The differences matter a lot when you get sick.",
+            "Employer coverage is often assumed to automatically coordinate with Medicare at 65. It doesn't always work that way.",
+            "Medicare Advantage and Original Medicare get treated as basically the same thing with different names. The differences matter a lot when you get sick.",
         ],
         'decision_urgency': [
             "If you turn 65 in the next 90 days, your Medicare Initial Enrollment Period is already open. Missing it has consequences that last years.",
@@ -349,10 +349,10 @@ HOOK_ANGLES = {
             "You've got money in a traditional IRA, a 401k from a previous job, and maybe a small pension. Figuring out how to turn that into reliable monthly income is more complicated than anyone told you.",
         ],
         'misconception': [
-            "Most people assume waiting until 70 to claim Social Security is always the right move. The math only works if you live long enough.",
-            "Most people think a will is enough to protect their estate. A will goes through probate. A trust does not.",
-            "Most people assume their 401k beneficiary designation matches their will. These are separate documents, and the beneficiary form always wins.",
-            "Most people think the biggest retirement risk is a market crash. Running out of money because you lived longer than you planned is statistically more common.",
+            "Waiting until 70 to claim Social Security gets treated as the right move by default. The math only works if you live long enough.",
+            "A will is often assumed to be enough to protect an estate. A will goes through probate. A trust does not.",
+            "A 401k beneficiary designation is often assumed to match the will. These are separate documents, and the beneficiary form always wins.",
+            "A market crash gets treated as the biggest retirement risk. Running out of money because you lived longer than you planned is statistically more common.",
         ],
         'decision_urgency': [
             "If you're within five years of retirement, the sequence of investment returns in those years matters more than almost any other single factor in your long-term outcome.",
@@ -380,16 +380,16 @@ HOOK_ANGLES = {
         ],
         'misconception': [
             "Most falls at home don't happen in the bathroom. They happen in the bedroom, on stairs, and in the living room, where people never think to put safety equipment.",
-            "Most people assume aging in place means major construction. The most effective changes are often the least expensive ones.",
-            "Most people think medical alert systems are for people who've already had a health emergency. The data shows they prevent the emergency from happening in the first place.",
+            "Aging in place gets equated with major construction. The most effective changes are often the least expensive ones.",
+            "Medical alert systems get framed as something for people who've already had a health emergency. The data shows they prevent the emergency from happening in the first place.",
         ],
     },
     'D': {  # Senior Health & Wellness
         'misconception': [
-            "Most people think strength training is too risky after 70. The research consistently says the opposite.",
-            "Most people assume fatigue and low energy are just part of getting older. Often, they're symptoms of something addressable.",
-            "Most people think the Mediterranean diet is complicated to follow. The core of it is simpler than almost any other eating pattern.",
-            "Most people assume that once you have arthritis, high-impact activity is off the table. The type of activity matters more than the impact level.",
+            "Strength training after 70 gets treated as too risky to attempt. The research consistently says the opposite.",
+            "Fatigue and low energy get written off as just part of getting older. Often, they're symptoms of something addressable.",
+            "The Mediterranean diet gets a reputation for being complicated to follow. The core of it is simpler than almost any other eating pattern.",
+            "Arthritis gets treated as an automatic reason to rule out high-impact activity. The type of activity matters more than the impact level.",
         ],
         'pain_point': [
             "You're doing everything your doctor says, but your energy levels aren't what they used to be, and you're not sure what's normal aging versus what's fixable.",

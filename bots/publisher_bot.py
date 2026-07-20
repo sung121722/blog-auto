@@ -66,31 +66,35 @@ def load_config(filename: str) -> dict:
 # ─── Google 인증 ─────────────────────────────────────
 
 def get_google_credentials() -> Credentials:
+    from google.auth.exceptions import RefreshError
     creds = None
     if TOKEN_PATH.exists():
         creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            with open(TOKEN_PATH, 'w') as f:
-                f.write(creds.to_json())
-        else:
-            # GitHub Actions 환경: 환경변수에서 직접 인증
-            client_id = os.getenv('GOOGLE_CLIENT_ID', '')
-            client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '')
-            refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN', '')
-            if client_id and client_secret and refresh_token:
-                creds = Credentials(
-                    token=None,
-                    refresh_token=refresh_token,
-                    token_uri='https://oauth2.googleapis.com/token',
-                    client_id=client_id,
-                    client_secret=client_secret,
-                    scopes=SCOPES,
-                )
+        try:
+            if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
+                with open(TOKEN_PATH, 'w') as f:
+                    f.write(creds.to_json())
             else:
-                raise RuntimeError("Google 인증 실패. scripts/get_token.py 를 먼저 실행하세요.")
+                # GitHub Actions 환경: 환경변수에서 직접 인증
+                client_id = os.getenv('GOOGLE_CLIENT_ID', '')
+                client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '')
+                refresh_token = os.getenv('GOOGLE_REFRESH_TOKEN', '')
+                if client_id and client_secret and refresh_token:
+                    creds = Credentials(
+                        token=None,
+                        refresh_token=refresh_token,
+                        token_uri='https://oauth2.googleapis.com/token',
+                        client_id=client_id,
+                        client_secret=client_secret,
+                        scopes=SCOPES,
+                    )
+                    creds.refresh(Request())
+                else:
+                    raise RuntimeError("Google 인증 실패. scripts/get_token.py 를 먼저 실행하세요.")
+        except RefreshError as e:
+            raise RuntimeError(f"Google 토큰 리프레시 실패 (refresh_token 만료/취소 가능성): {e}")
     if not creds or not creds.valid:
         raise RuntimeError("Google 인증 실패. scripts/get_token.py 를 먼저 실행하세요.")
     return creds
@@ -444,10 +448,6 @@ def build_full_html(article: dict, body_html: str, toc_html: str, blog_url: str 
     json_ld = build_json_ld(article, blog_url)
     disclaimer = article.get('disclaimer', '')
 
-    # FAQ 스키마 파싱 및 추가
-    faq_items = parse_faq_from_body(body_html)
-    faq_schema = add_faq_schema(article, faq_items)
-
     # JSON-LD script는 Blogger API가 보안상 거부 → 제외
     html_parts = []
     if toc_html:
@@ -774,8 +774,11 @@ def publish(article: dict) -> bool:
     if post_url:
         submit_to_search_console(post_url, creds)
 
-    # 발행 이력 저장
-    log_published(article, post_result)
+    # 발행 이력 저장 (실패해도 글은 이미 발행 완료 상태이므로 여기서 죽으면 안 됨)
+    try:
+        log_published(article, post_result)
+    except Exception as e:
+        logger.error(f'발행 이력 저장 실패 (발행 자체는 완료됨): {e}')
 
     # Telegram 알림
     title = article.get('title', '')

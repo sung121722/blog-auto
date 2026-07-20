@@ -365,7 +365,7 @@ FAQ rules:
 - At least one answer must include a specific dollar amount or age threshold
 
 Total target: {word_target} (FAQ word count included in total).
-MINIMUM HARD FLOOR: A/B categories must reach at least 1,600 words. C/D must reach at least 1,200 words. Below this, the article will be rejected before publishing.
+MINIMUM HARD FLOOR: A/B categories must reach at least 1,200 words. C/D must reach at least 1,000 words. Below this, the article will be rejected before publishing.
 
 
 ════════════════════════════════════════════════

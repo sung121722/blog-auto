@@ -536,11 +536,9 @@ def run(article: dict) -> dict:
     # HARD CHECK 5 — 사실 오류 패턴
     # ═══════════════════════════════════════════════════════
     # <hr> 이후는 면책문구 + Keep Reading 영역 — 팩트체크 대상 제외
-    _soup_full = BeautifulSoup(html, 'html.parser')
-    _hr = _soup_full.find('hr')
-    _body_html = str(_hr.find_previous_siblings()) if _hr else html
     # 본문만 plain text 추출 (Keep Reading / 면책문구 제외)
     _body_soup = BeautifulSoup(html, 'html.parser')
+    _hr = _body_soup.find('hr')
     if _hr:
         for el in _hr.find_all_next():
             el.decompose()
