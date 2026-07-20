@@ -21,7 +21,7 @@ from senior_config import (
     get_hook_for_category,
     CATEGORIES,
 )
-from senior_collector import get_used_hook_angles
+from senior_collector import get_used_hook_angles, get_recent_openings
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +159,15 @@ def _build_rates_block(rates: dict) -> str:
     return '\n'.join(lines)
 
 
+# 오프닝 구조 로테이션 — 매 글마다 다른 수사적 틀 강제 (템플릿 반복 방지)
+OPENING_STYLES = {
+    'direct_stat': 'Open with a specific number, dollar amount, or age threshold in the very first sentence, stated as a plain fact. No framing sentence before it.',
+    'scenario': 'Open by describing a concrete but unnamed situation the reader is likely in right now, grounded in a specific detail (a document they received, a decision deadline, a bill amount) — not a vague feeling.',
+    'question_answer': 'Open with the exact question the reader typed into Google, stated as a direct question, then answer it in one plain sentence immediately after. No build-up before the answer.',
+    'contrarian': 'Open by naming a common assumption or piece of advice people follow, then immediately state why it does not fully apply here. Phrase this in your own words each time.',
+}
+
+
 def build_system_prompt(category_key: str = None) -> str:
     """시스템 프롬프트 생성.
 
@@ -167,7 +176,9 @@ def build_system_prompt(category_key: str = None) -> str:
       C/D (medium CPC, Gemini):     1,200-1,600 단어 — 효율 최적화
     """
     from datetime import datetime
+    import random
     current_year = datetime.now().year
+    opening_style_name, opening_style_instruction = random.choice(list(OPENING_STYLES.items()))
 
     # 카테고리별 단어수 목표 (AdSense YMYL 기준 상향)
     if category_key in ('C', 'D'):
@@ -241,10 +252,10 @@ ARTICLE STRUCTURE — 4 PARTS
 PART 1: SHARP HOOK (~15% / 200-250 words)
 Open with the reader's actual question or anxiety. Not a story. Not a memory. Not a warm-up. The thing they literally Googled.
 
-Make them feel understood in the first two sentences. End with a clear, specific promise of what this article will deliver.
+Make them feel understood in the first two sentences. End with a specific promise of what this article will deliver, phrased in your own words.
 
-GOOD HOOK EXAMPLES:
-"If you're turning 65 in the next few months and still working, you're facing a Medicare decision that has a real deadline — and most HR departments don't warn you about it until it's almost too late."
+OPENING STYLE FOR THIS ARTICLE: {opening_style_name}
+{opening_style_instruction}
 
 BAD HOOK EXAMPLES (DO NOT WRITE THESE):
 - Any nostalgic story about childhood, summer, or the past
@@ -262,7 +273,7 @@ PART 3: DEEP DIVE — MAIN VALUE (~60% / {deep_dive})
 - Include at least one concrete scenario. Write it naturally:
   "Take someone who spent 30 years as a school nurse, earning around $52,000 a year toward the end of her career..."
   NOT: "Meet Linda, 62, a retired school nurse who..."
-- Include at least one thing most readers get wrong. Lead with "Most people assume..." and correct it clearly.
+- Include at least one thing most readers get wrong, corrected clearly — phrase the setup in your own words each time (do NOT default to "Most people assume...").
 - For any set of 3 or more options, costs, or steps: use <ul><li> with <strong>bold lead-in</strong>, colon, explanation.
 
 STATISTICS AND CITATIONS:
@@ -436,8 +447,18 @@ def build_user_prompt(category_key, category_info, primary_keyword,
                       supporting_keywords, hook_type, hook_angle,
                       research_context: str = '',
                       word_target: str = '1,400-1,800 words',
-                      deep_dive: str = '850-1,000 words') -> str:
+                      deep_dive: str = '850-1,000 words',
+                      recent_openings: list | None = None) -> str:
     sup_kw = '\n'.join(f'  - {kw}' for kw in supporting_keywords)
+
+    avoid_openings_block = ''
+    if recent_openings:
+        examples = '\n'.join(f'  {i+1}. "{o}"' for i, o in enumerate(recent_openings))
+        avoid_openings_block = f"""
+RECENT OPENINGS TO AVOID REPEATING (do not open with a similar structure or phrasing to any of these):
+{examples}
+
+"""
 
     # 카테고리 C (Aging in Place): 제품 가격 범위 명시 지시
     # 샤워 의자, 안전 손잡이, 경사로 등 실제 구매가 포함된 주제
@@ -458,7 +479,7 @@ REAL-TIME RESEARCH DATA (cite naturally when specific data is present — do NOT
 
 """
     return f"""Write a full blog post for "Healthy After 50" following all system prompt rules exactly.
-{research_block}
+{research_block}{avoid_openings_block}
 CATEGORY: {category_info['name']}
 PRIMARY KEYWORD (must appear in H1 title and at least one H2): "{primary_keyword}"
 SUPPORTING KEYWORDS (weave in naturally — never forced, never repeated more than twice):
@@ -473,12 +494,12 @@ Suggested angle (use as a starting point — develop it, make it specific and ea
 
 Open with the reader's real situation right now. Do NOT open with a story, a memory, or any nostalgic reference. Do NOT open with generic statements like "retirement can feel overwhelming."
 
-End Part 1 with a clear, specific promise of what this article delivers.
+End Part 1 with a specific promise of what this article delivers, phrased in your own words — do NOT use the stock phrase "This article walks through exactly what."
 
 ────────────────────────────────────────
 CONTEXT / EMPATHY (Part 2 — 150 words):
 ────────────────────────────────────────
-Acknowledge why this topic is genuinely confusing or difficult. One honest reason why generic advice often fails here. Transition naturally into the main content.
+Acknowledge why this topic is genuinely confusing or difficult, in your own phrasing — do NOT title or phrase this section as "[Topic] Confuses Almost Everyone." One honest reason why generic advice often fails here. Transition naturally into the main content.
 
 ────────────────────────────────────────
 DEEP DIVE (Part 3 — {deep_dive}):
@@ -487,7 +508,7 @@ DEEP DIVE (Part 3 — {deep_dive}):
 - Break into 2-4 sub-sections with <h2> tags.
 - Include specific dollar amounts, age thresholds, or percentages (from research context if available — otherwise use general framing only).
   {price_instruction}- One concrete scenario written naturally (NOT "Meet Linda, 62..." — write it as "Take someone who worked as...").
-- At least one "Most people assume..." correction.
+- At least one moment correcting a common misconception — phrase it originally each time; do NOT use the stock phrase "Most people assume."
 - Supporting keywords woven in naturally.
 
 ────────────────────────────────────────
@@ -811,6 +832,7 @@ def generate_post(
         research_context=research_context,
         word_target=word_target,
         deep_dive=deep_dive,
+        recent_openings=get_recent_openings(),
     )
 
     logger.info(f'카테고리: {category_key} / {category_info["name"]}')

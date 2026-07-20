@@ -11,8 +11,10 @@ from senior_config import KEYWORDS, CATEGORIES, get_category_for_today
 
 HISTORY_FILE    = Path(__file__).parent / 'data' / 'keyword_history.json'
 HOOK_HIST_FILE  = Path(__file__).parent / 'data' / 'hook_history.json'
+OPENING_HIST_FILE = Path(__file__).parent / 'data' / 'opening_history.json'
 MAX_HISTORY_DAYS     = 60
 HOOK_COOLDOWN_DAYS   = 30   # 같은 앵글이 30일 이내 재사용되면 제외
+OPENING_HISTORY_KEEP = 8    # 프롬프트에 주입할 최근 오프닝 개수
 
 
 def load_history() -> dict:
@@ -109,3 +111,27 @@ def mark_hook_used(hook_angle: str, hook_type: str, category_key: str):
         if datetime.fromisoformat(m['used_at']) > cutoff
     }
     save_hook_history(history)
+
+
+# ─── 오프닝 문장 이력 (템플릿 반복 방지) ──────────────────────────────
+
+def get_recent_openings(n: int = OPENING_HISTORY_KEEP) -> list:
+    """가장 최근 발행된 글들의 오프닝 첫 문장 목록 반환 (최신순)"""
+    if not OPENING_HIST_FILE.exists():
+        return []
+    with open(OPENING_HIST_FILE, 'r', encoding='utf-8') as f:
+        history = json.load(f)
+    return history[-n:][::-1]
+
+
+def mark_opening_used(opening_text: str):
+    """발행 완료 후 호출 — 오프닝 첫 문장을 이력에 추가 (최근 OPENING_HISTORY_KEEP*3개만 보관)"""
+    history = []
+    if OPENING_HIST_FILE.exists():
+        with open(OPENING_HIST_FILE, 'r', encoding='utf-8') as f:
+            history = json.load(f)
+    history.append(opening_text)
+    history = history[-(OPENING_HISTORY_KEEP * 3):]
+    OPENING_HIST_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(OPENING_HIST_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)

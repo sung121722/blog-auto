@@ -19,7 +19,7 @@ load_dotenv(dotenv_path=_BASE / '.env', override=True)
 
 from bots import publisher_bot
 from senior_generator import generate_post
-from senior_collector import collect_keywords_for_today, mark_keyword_used, mark_hook_used
+from senior_collector import collect_keywords_for_today, mark_keyword_used, mark_hook_used, mark_opening_used
 from senior_config import get_post_labels, UNSPLASH_ACCESS_KEY
 import publish_governor
 from publish_governor import PublishBlocked, save_published_title
@@ -278,6 +278,11 @@ def _publish_generated_post(post: dict, category_key: str, category_info: dict, 
             mark_hook_used(hook_info['hook_angle'], hook_info.get('hook_type', ''), category_key)
         # 중복 방지용 제목 이력 기록
         save_published_title(post['title'])
+        # 오프닝 문장 이력 기록 (다음 글 생성 시 반복 방지용)
+        opening_text = re.sub(r'<[^>]+>', ' ', post.get('html_content', ''))
+        opening_text = re.sub(r'\s+', ' ', opening_text).strip()[:200]
+        if opening_text:
+            mark_opening_used(opening_text)
     else:
         logger.warning('발행 실패 또는 검토 대기')
 
