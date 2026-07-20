@@ -710,7 +710,13 @@ def publish(article: dict) -> bool:
     }
     Returns: True(발행 성공) / False(수동 검토 대기)
     """
-    logger.info(f"발행 시도: {article.get('title', '')}")
+    # 최종 안전장치 — 상위 파이프라인 제어 흐름 버그로 이 지점까지 잘못 도달해도 여기서 막음
+    title = (article.get('title') or '').strip()
+    if not title or title in ('제목 없음', 'Untitled', 'No Title'):
+        logger.error(f"[PUBLISHER] 발행 거부 — 유효하지 않은 제목: '{title}'")
+        return False
+
+    logger.info(f"발행 시도: {title}")
     safety_cfg = load_config('safety_keywords.json')
 
     # 안전장치 검사
