@@ -263,7 +263,8 @@ _FACTUAL_ERROR_PATTERNS = [
 
 # 별도 처리 — 개인참조 감지 (0회 허용 정책: 프롬프트가 NO I-REFERENCE로 변경됨)
 _PERSONAL_REF_RE = re.compile(
-    r'\b(i\s+watched|i\s+saw|i\s+know|i\s+once|i\s+always|i\s+remember'
+    # "How do/would I know...?"는 독자가 던지는 FAQ 질문 형식(1인칭 경험 서술 아님) — 오탐 제외
+    r'\b(i\s+watched|i\s+saw|(?<!how do )(?<!how would )(?<!how does one )i\s+know|i\s+once|i\s+always|i\s+remember'
     r'|i\s+tried|i\s+learned|i\'ve|i\s+retired|when\s+i\s|i\s+helped'
     r'|i\'ve\s+sat|i\s+spent|i\s+worked|i\s+have\s+seen|i\s+have\s+watched'
     r'|i\s+can\'t|i\s+cannot|i\s+would|i\s+will|i\s+think|i\s+believe'

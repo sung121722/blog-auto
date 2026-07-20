@@ -196,13 +196,16 @@ def run():
             continue
 
         result = _publish_generated_post(post, category_key, category_info, collected)
-        if result is not None:
+        # result: True=발행 성공 / False=Blogger 발행 실패 or 수동검토 대기 / None=Governor 차단
+        # False도 None과 동일하게 재시도 대상 — 예전엔 result is not None만 봐서
+        # False(예: 중복 제목으로 Blogger가 거부)를 "완료"로 착각하고 재시도 없이 조용히 끝났음
+        if result:
             break
         if attempt < MAX_RETRIES:
-            logger.warning(f'[Governor 차단] 시도 {attempt + 1}회차로 재시도 (다른 키워드)')
+            logger.warning(f'[재시도] 시도 {attempt + 1}회차로 재시도 (다른 키워드) — 이전 결과: {result}')
 
-    if result is None:
-        logger.error(f'{MAX_RETRIES}회 모두 Governor에서 차단됨 — 오늘은 발행 없이 종료')
+    if not result:
+        logger.error(f'{MAX_RETRIES}회 모두 발행 실패 — 오늘은 발행 없이 종료')
         try:
             publisher_bot.send_telegram(
                 f'🚫 {MAX_RETRIES}회 재시도 후 발행 실패 — 오늘은 초안 없이 종료\n'

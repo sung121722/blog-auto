@@ -57,3 +57,13 @@ jobs:
 
       - name: Run auto publish
         run: python auto_publish.py
+
+      - name: Commit publish state
+        if: always()
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -f data/published_titles.json data/published/ data/keyword_history.json data/hook_history.json
+          git diff --staged --quiet || git commit -m "chore: update publish state [skip ci]"
+          git pull --rebase origin main
+          git push
