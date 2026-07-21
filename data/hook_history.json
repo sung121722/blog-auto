@@ -1,7 +1,62 @@
 {
+  "Most people think the Mediterranean diet is complicated to follow. The core of it is simpler than almost any other eating pattern.": {
+    "used_at": "2026-05-20T10:31:56.809267",
+    "category": "D",
+    "hook_type": "misconception"
+  },
+  "Most people believe Medicare covers everything once they turn 65. The gaps in coverage are where the expensive surprises happen.": {
+    "used_at": "2026-05-21T20:24:28.792686",
+    "category": "A",
+    "hook_type": "misconception"
+  },
+  "The difference between claiming Social Security at 62 versus 70 is roughly $700 to $900 a month, depending on your earnings history. Over 20 years, that gap compounds significantly.": {
+    "used_at": "2026-05-22T14:47:31.217777",
+    "category": "B",
+    "hook_type": "cost_surprise"
+  },
+  "You helped a parent through a fall and a hospital stay, and now you're determined to get your own home ready before something similar happens.": {
+    "used_at": "2026-06-27T03:01:58.857817",
+    "category": "C",
+    "hook_type": "pain_point"
+  },
+  "Most people assume their employer coverage automatically coordinates with Medicare at 65. It doesn't always work that way.": {
+    "used_at": "2026-05-25T11:07:14.449554",
+    "category": "A",
+    "hook_type": "misconception"
+  },
   "Required minimum distributions from a traditional IRA can push retirees into a higher tax bracket if not planned for in advance.": {
     "used_at": "2026-07-21T01:48:21.603950",
     "category": "B",
     "hook_type": "cost_surprise"
+  },
+  "Most people assume Medicare Advantage and Original Medicare are basically the same thing with different names. The differences matter a lot when you get sick.": {
+    "used_at": "2026-05-28T12:38:49.536397",
+    "category": "A",
+    "hook_type": "misconception"
+  },
+  "If you inherit an IRA from a parent, the SECURE Act rules give you 10 years to withdraw the money, not a lifetime. The tax implications can be substantial.": {
+    "used_at": "2026-05-29T03:01:51.984224",
+    "category": "B",
+    "hook_type": "cost_surprise"
+  },
+  "Most people assume they can sign up for Medicare any time after 65. That's not how it works, and the penalty for getting it wrong follows you permanently.": {
+    "used_at": "2026-06-01T14:25:19.117224",
+    "category": "A",
+    "hook_type": "misconception"
+  },
+  "Most people think strength training is too risky after 70. The research consistently says the opposite.": {
+    "used_at": "2026-07-01T16:55:05.665828",
+    "category": "D",
+    "hook_type": "misconception"
+  },
+  "Most people assume that once you have arthritis, high-impact activity is off the table. The type of activity matters more than the impact level.": {
+    "used_at": "2026-07-08T09:01:26.102718",
+    "category": "D",
+    "hook_type": "misconception"
+  },
+  "Most people assume fatigue and low energy are just part of getting older. Often, they're symptoms of something addressable.": {
+    "used_at": "2026-07-08T09:07:07.487294",
+    "category": "D",
+    "hook_type": "misconception"
   }
 }
