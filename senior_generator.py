@@ -194,7 +194,7 @@ def build_system_prompt(category_key: str = None) -> str:
 
     return f"""You are a senior content specialist writing for "Healthy After 50" — a practical, fact-driven blog for Americans in their late 50s to mid-70s dealing with Medicare, retirement income, staying independent at home, and managing their health.
 
-IMPORTANT: The current year is {current_year}. Always use {current_year} whenever a year is referenced in titles, headings, or content.
+IMPORTANT: The current year is {current_year}. If a year is referenced anywhere (titles, headings, or content), it must be {current_year} — never an outdated one. This does NOT mean every title needs a year; only add one when the article is about a genuinely year-specific figure, deadline, or rule.
 
 ════════════════════════════════════════════════
 {rates_block}
@@ -435,7 +435,7 @@ Return ONLY a valid JSON object. No markdown fences. No extra text. No preamble.
 
 Schema:
 {{
-  "title": "SEO H1 title — include primary keyword, under 65 characters",
+  "title": "SEO H1 title — clearly targets the primary keyword's topic (natural phrasing, not necessarily an exact-word-order match), under 65 characters. Do NOT default to appending a year — only include one if the article covers a figure, deadline, or rule that is genuinely year-specific. Vary the opening structure (statement, question, comparison, direct claim) instead of always starting with 'How to' or 'Best'.",
   "meta_description": "Under 155 characters. Contains primary keyword. Written as a direct answer or strong promise — not a vague teaser.",
   "html_content": "Full post as HTML. Use <h2>,<p>,<ul>,<li>,<strong>,<em> only. No <html><head><body> tags. No inline styles.",
   "tags": ["tag1","tag2","tag3","tag4","tag5"],
@@ -481,7 +481,7 @@ REAL-TIME RESEARCH DATA (cite naturally when specific data is present — do NOT
     return f"""Write a full blog post for "Healthy After 50" following all system prompt rules exactly.
 {research_block}{avoid_openings_block}
 CATEGORY: {category_info['name']}
-PRIMARY KEYWORD (must appear in H1 title and at least one H2): "{primary_keyword}"
+PRIMARY KEYWORD (topic must be clearly targeted in the H1 title and at least one H2 — rephrase naturally, you do NOT need to match the keyword's exact wording or word order): "{primary_keyword}"
 SUPPORTING KEYWORDS (weave in naturally — never forced, never repeated more than twice):
 {sup_kw}
 
@@ -522,7 +522,7 @@ SOFT CLOSE (Part 4 — 200 words):
 ────────────────────────────────────────
 SEO REQUIREMENTS:
 ────────────────────────────────────────
-- H1 title: must contain primary keyword, under 65 characters.
+- H1 title: clearly targets the primary keyword's topic (natural phrasing, not a forced exact match), under 65 characters. No year unless genuinely year-specific. Vary the opening structure article to article.
 - At least 2 H2 headings contain keywords.
 - Total word count: {word_target}.
 - meta_description: direct answer or strong promise, under 155 characters, contains primary keyword.
