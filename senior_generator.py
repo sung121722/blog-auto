@@ -363,6 +363,7 @@ FAQ rules:
 - Each answer is self-contained (reader who skips the article still gets value)
 - Do NOT copy body paragraphs verbatim — synthesize
 - At least one answer must include a specific dollar amount or age threshold
+- Where relevant, answers should include procedural specifics (exact form/document name, processing time, what to expect next) rather than staying abstract
 
 Total target: {word_target} (FAQ word count included in total).
 MINIMUM HARD FLOOR: A/B categories must reach at least 1,200 words. C/D must reach at least 1,000 words. Below this, the article will be rejected before publishing.
@@ -507,7 +508,7 @@ DEEP DIVE (Part 3 — {deep_dive}):
 - First <h2> must include the primary keyword "{primary_keyword}".
 - Break into 2-4 sub-sections with <h2> tags.
 - Include specific dollar amounts, age thresholds, or percentages (from research context if available — otherwise use general framing only).
-  {price_instruction}- One concrete scenario written naturally (NOT "Meet Linda, 62..." — write it as "Take someone who worked as...").
+  {price_instruction}- At least TWO concrete scenarios written naturally (NOT "Meet Linda, 62..." — write it as "Take someone who worked as..."). Each scenario must include procedural specificity only someone who has actually been through this would know — the exact form/document name, how long it actually took, what nearly went wrong, or what surprised them. Do not stop at a generic setup sentence; follow it through to a specific, concrete outcome.
 - At least one moment correcting a common misconception — phrase it originally each time; do NOT use the stock phrase "Most people assume."
 - Supporting keywords woven in naturally.
 
