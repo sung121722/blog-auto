@@ -854,7 +854,16 @@ def generate_post(
         else:
             user_prompt = base_user_prompt
 
-        raw = writer.write(user_prompt, system=system_prompt)
+        # Gemini 라우팅 카테고리(C/D)는 2회 실패 후 마지막 시도만 Claude로 강제 전환
+        # (FallbackWriter는 API 호출 자체 실패에만 반응 — 금지문구/분량부족 같은
+        #  콘텐츠 검증 실패는 writer 입장에서 "성공"으로 보여 폴백이 발동되지 않음)
+        if attempt == 3 and category_key.upper() in ('C', 'D'):
+            logger.warning('[MODEL ESCALATION] Gemini 2회 실패 — 마지막 시도는 Claude로 전환')
+            current_writer = EngineLoader().get_writer()  # category_key 미지정 → 기본 Claude
+        else:
+            current_writer = writer
+
+        raw = current_writer.write(user_prompt, system=system_prompt)
         if not raw:
             logger.warning(f'빈 응답 (시도 {attempt}/3)')
             continue
