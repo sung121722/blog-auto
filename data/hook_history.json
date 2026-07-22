@@ -58,5 +58,10 @@
     "used_at": "2026-07-08T09:07:07.487294",
     "category": "D",
     "hook_type": "misconception"
+  },
+  "Arthritis gets treated as an automatic reason to rule out high-impact activity. The type of activity matters more than the impact level.": {
+    "used_at": "2026-07-22T11:05:56.302952",
+    "category": "D",
+    "hook_type": "misconception"
   }
 }
