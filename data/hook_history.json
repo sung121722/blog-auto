@@ -63,5 +63,10 @@
     "used_at": "2026-07-22T11:05:56.302952",
     "category": "D",
     "hook_type": "misconception"
+  },
+  "Employer coverage is often assumed to automatically coordinate with Medicare at 65. It doesn't always work that way.": {
+    "used_at": "2026-07-23T01:55:16.003476",
+    "category": "A",
+    "hook_type": "misconception"
   }
 }
