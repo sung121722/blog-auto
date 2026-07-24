@@ -68,5 +68,10 @@
     "used_at": "2026-07-23T01:55:16.003476",
     "category": "A",
     "hook_type": "misconception"
+  },
+  "A reverse mortgage origination fee can run between $2,500 and $6,000. Most people don't ask about it until after they're already interested.": {
+    "used_at": "2026-07-24T01:49:30.950415",
+    "category": "B",
+    "hook_type": "cost_surprise"
   }
 }
