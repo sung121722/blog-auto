@@ -57,6 +57,13 @@ BANNED_SOFT = {
     'in conclusion', 'furthermore', 'moreover', 'utilize',
 }
 
+# ─── 시나리오 앵커 문구 ─────────────────────────────────────────
+# senior_generator.py가 시나리오 도입부로 요구하는 표준 문구.
+# 프롬프트 문구가 바뀌면 여기에도 새 앵커를 추가할 것 (하드코딩 한 곳에 모아둠).
+SCENARIO_ANCHORS = [
+    'take someone who',
+]
+
 # ─── CJK / 비ASCII 감지 패턴 ─────────────────────────────────
 _CJK_RE = re.compile(
     r'[　-鿿'   # CJK 통합 한자, 한중일 기호
@@ -650,6 +657,31 @@ def run(article: dict) -> dict:
     # ═══════════════════════════════════════════════════════
     if 'example.com/pending' in html or 'example.com' in html:
         msg = '[SOFT] 더미 링크(example.com) 감지 — publisher_bot이 비활성 버튼으로 렌더링'
+        logger.warning(msg)
+        warnings.append(msg)
+
+    # ═══════════════════════════════════════════════════════
+    # SOFT CHECK 7 — 시나리오 개수 (생성 규칙 준수 여부 확인)
+    # senior_generator.py가 "최소 2개" 요구 — 여기서는 앵커 문구 개수만 셈
+    # (자연어 이해 아님, 생성기-검증기가 같은 계약을 공유하는 단순 카운트)
+    # ═══════════════════════════════════════════════════════
+    scenario_count = sum(text_lower.count(anchor) for anchor in SCENARIO_ANCHORS)
+    if scenario_count < 2:
+        msg = f'[SOFT] 시나리오 개수 {scenario_count}개 (요구: 2개 이상) — 생성 규칙 미준수 가능성'
+        logger.warning(msg)
+        warnings.append(msg)
+
+    # ═══════════════════════════════════════════════════════
+    # SOFT CHECK 8 — 근거 밀도 (수치 대비 공식 출처 링크 비율)
+    # PASS/BLOCK 기준 아님 — 품질 리포트 정보성 경고
+    # ═══════════════════════════════════════════════════════
+    numeric_facts = len(re.findall(r'\$[\d,]+(?:\.\d+)?|\d+(?:\.\d+)?%', plain_text))
+    if numeric_facts >= 10 and len(official_links) <= 2:
+        ratio = len(official_links) / numeric_facts
+        msg = (
+            f'[SOFT] 근거 밀도 낮음: 수치 {numeric_facts}개 / 공식 링크 {len(official_links)}개 '
+            f'(비율 {ratio:.2f}) — 출처 보강 권장'
+        )
         logger.warning(msg)
         warnings.append(msg)
 
