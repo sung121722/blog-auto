@@ -73,5 +73,10 @@
     "used_at": "2026-07-24T01:49:30.950415",
     "category": "B",
     "hook_type": "cost_surprise"
+  },
+  "You've watched a parent or friend have a fall at home, and now you're looking at your own house differently.": {
+    "used_at": "2026-07-25T01:50:05.658429",
+    "category": "C",
+    "hook_type": "pain_point"
   }
 }
