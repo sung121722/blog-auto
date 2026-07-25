@@ -291,13 +291,15 @@ def _load_stale_figure_checks() -> list:
     prev_year = current_year - 1
 
     # Part B deductible: 2025=$257, 2026=$283
+    # (주의: $185은 공제액이 아니라 Part B 월 보험료(premium) 수치 — 공제액 이력에 넣지 말 것.
+    #  넣으면 "Part B premium is $185/month" 같은 정상 문장이 "옛날 공제액"으로 오탐됨)
     pb_deductible = m.get('part_b', {}).get('annual_deductible')
     if pb_deductible:
-        # 이전 연도 알려진 값들
-        stale_pb = [v for v in [257, 226, 203, 185] if v != pb_deductible]
+        # 이전 연도 알려진 값들 (실제 공제액 이력만 — premium 수치 혼입 금지)
+        stale_pb = [v for v in [257, 233, 226, 240, 203] if v != pb_deductible]
         for old_val in stale_pb:
             checks.append((
-                re.compile(rf'Part\s+B\b.{{0,60}}\$\s*{old_val}\b|\$\s*{old_val}\b.{{0,60}}Part\s+B\s+deductible', re.IGNORECASE),
+                re.compile(rf'Part\s+B\s+deductible\b[^.]{{0,60}}\$\s*{old_val}\b|\$\s*{old_val}\b[^.]{{0,60}}Part\s+B\s+deductible', re.IGNORECASE),
                 f'Stale Part B deductible ${old_val} detected — {current_year} correct value is ${pb_deductible}'
             ))
 
@@ -307,7 +309,7 @@ def _load_stale_figure_checks() -> list:
         stale_pa = [v for v in [1676, 1632, 1600, 1556] if v != pa_deductible]
         for old_val in stale_pa:
             checks.append((
-                re.compile(rf'Part\s+A\b.{{0,80}}\$\s*{old_val:,}\b|\$\s*{old_val:,}\b.{{0,80}}Part\s+A\s+(?:hospital\s+)?deductible', re.IGNORECASE),
+                re.compile(rf'Part\s+A\s+(?:hospital\s+)?deductible\b[^.]{{0,80}}\$\s*{old_val:,}\b|\$\s*{old_val:,}\b[^.]{{0,80}}Part\s+A\s+(?:hospital\s+)?deductible', re.IGNORECASE),
                 f'Stale Part A deductible ${old_val:,} detected — {current_year} correct value is ${pa_deductible:,}'
             ))
 
