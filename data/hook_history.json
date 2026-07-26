@@ -83,5 +83,10 @@
     "used_at": "2026-07-25T02:41:15.732426",
     "category": "C",
     "hook_type": "pain_point"
+  },
+  "Strength training after 70 gets treated as too risky to attempt. The research consistently says the opposite.": {
+    "used_at": "2026-07-26T01:52:19.637015",
+    "category": "D",
+    "hook_type": "misconception"
   }
 }
