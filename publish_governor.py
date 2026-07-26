@@ -599,10 +599,11 @@ def run(article: dict) -> dict:
         'cdc.gov', 'nih.gov', 'nia.nih.gov', 'medlineplus.gov', 'acl.gov',
     ]
     official_links = [d for d in _OFFICIAL_DOMAINS if d in html.lower()]
-    if len(official_links) < 1:
+    if len(official_links) < 2:
         raise PublishBlocked(
-            '[HARD] 공식 출처 링크 없음 — medicare.gov / ssa.gov / cdc.gov / nih.gov 중 '
-            '최소 1개 이상 본문에 삽입 필요 (AdSense E-E-A-T 요건)'
+            f'[HARD] 공식 출처 링크 부족 ({len(official_links)}개, 최소 2개 필요) — '
+            'medicare.gov / ssa.gov / cdc.gov / nih.gov 등 서로 다른 공식 도메인 2개 이상 '
+            '본문에 삽입 필요 (프롬프트가 이미 요구하던 기준, 코드가 1개로 완화되어 있던 것을 원복)'
         )
     hard_checks.append(f'OFFICIAL_LINKS({len(official_links)}개): PASS')
 
