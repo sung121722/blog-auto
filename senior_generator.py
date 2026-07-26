@@ -854,11 +854,13 @@ def generate_post(
         else:
             user_prompt = base_user_prompt
 
-        # Gemini 라우팅 카테고리(C/D)는 2회 실패 후 마지막 시도만 Claude로 강제 전환
+        # Gemini 라우팅 카테고리(C/D)는 1차만 Gemini, 2~3차는 Claude로 전환
         # (FallbackWriter는 API 호출 자체 실패에만 반응 — 금지문구/분량부족 같은
-        #  콘텐츠 검증 실패는 writer 입장에서 "성공"으로 보여 폴백이 발동되지 않음)
-        if attempt == 3 and category_key.upper() in ('C', 'D'):
-            logger.warning('[MODEL ESCALATION] Gemini 2회 실패 — 마지막 시도는 Claude로 전환')
+        #  콘텐츠 검증 실패는 writer 입장에서 "성공"으로 보여 폴백이 발동되지 않음.
+        # 실측 로그 기준 Gemini는 1차 실패 시 2차도 거의 항상 같은 이유로 실패했음 —
+        # 2차 재시도를 Gemini에 한 번 더 안 쓰고 바로 Claude로 넘겨 성공 확률을 높임)
+        if attempt >= 2 and category_key.upper() in ('C', 'D'):
+            logger.warning(f'[MODEL ESCALATION] Gemini 1회 실패 — {attempt}차 시도는 Claude로 전환')
             current_writer = EngineLoader().get_writer()  # category_key 미지정 → 기본 Claude
         else:
             current_writer = writer
