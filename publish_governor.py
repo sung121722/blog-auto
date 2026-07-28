@@ -595,6 +595,8 @@ def run(article: dict) -> dict:
     _OFFICIAL_DOMAINS = [
         # Medicare / Insurance / Social Security (A/B 카테고리)
         'medicare.gov', 'ssa.gov', 'cms.gov', 'shiphelp.org',
+        # 주택·은퇴자산 (B 카테고리 — 역모기지/RMD 등 SSA·Medicare로 안 커버되는 주제)
+        'consumerfinance.gov', 'irs.gov',
         # 건강·웰니스 공식 기관 (C/D 카테고리 — 그리프·탈수·운동·영양 등)
         'cdc.gov', 'nih.gov', 'nia.nih.gov', 'medlineplus.gov', 'acl.gov',
     ]

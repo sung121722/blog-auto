@@ -327,6 +327,10 @@ Social Security (A/B category or retirement topics):
 - My SS account:        <a href="https://www.ssa.gov/myaccount/" rel="noopener noreferrer" target="_blank">my Social Security account</a>
 - SS benefit estimator: <a href="https://www.ssa.gov/prepare/estimate-benefits" rel="noopener noreferrer" target="_blank">SSA benefit estimator</a>
 
+Housing & Retirement Finance (B category — home equity, reverse mortgages, RMDs, IRA/401k withdrawal rules):
+- Reverse mortgages:    <a href="https://www.consumerfinance.gov/consumer-tools/reverse-mortgages/" rel="noopener noreferrer" target="_blank">CFPB reverse mortgage guide</a>
+- RMD rules:            <a href="https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-required-minimum-distributions-rmds" rel="noopener noreferrer" target="_blank">IRS required minimum distribution rules</a>
+
 Health & Wellness (C/D category — grief, exercise, nutrition, dehydration, mental health, sleep, etc.):
 - CDC fall prevention:  <a href="https://www.cdc.gov/falls/index.html" rel="noopener noreferrer" target="_blank">CDC fall prevention for older adults</a>
 - CDC physical activity:<a href="https://www.cdc.gov/physicalactivity/basics/older_adults/index.htm" rel="noopener noreferrer" target="_blank">CDC physical activity guidelines for older adults</a>
