@@ -98,5 +98,10 @@
     "used_at": "2026-07-29T11:03:06.574005",
     "category": "D",
     "hook_type": "misconception"
+  },
+  "There's a common assumption that Medicare enrollment can happen any time after 65. That's not how it works, and the penalty for getting it wrong follows you permanently.": {
+    "used_at": "2026-07-30T01:28:52.687096",
+    "category": "A",
+    "hook_type": "misconception"
   }
 }
