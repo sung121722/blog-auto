@@ -326,7 +326,7 @@ def _load_stale_figure_checks() -> list:
     ira_50plus   = ira_section.get('ira_contribution_50_plus')
     ira_under_50 = ira_section.get('ira_contribution_under_50')
     if ira_50plus:
-        stale_ira_50 = [v for v in [7500, 7000, 6500, 6000, 5500] if v != ira_50plus]
+        stale_ira_50 = [v for v in [7500, 7000, 6500, 6000, 5500] if v not in (ira_50plus, ira_under_50)]
         for old_val in stale_ira_50:
             checks.append((
                 re.compile(
