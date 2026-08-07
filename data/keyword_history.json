@@ -210,5 +210,9 @@
   "veterans pension benefit for low income wartime veterans": {
     "used_at": "2026-08-07T02:10:27.129096",
     "category": "B"
+  },
+  "medicaid asset protection trust for married couples": {
+    "used_at": "2026-08-07T11:04:50.641014",
+    "category": "B"
   }
 }
