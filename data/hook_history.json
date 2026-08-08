@@ -113,5 +113,10 @@
     "used_at": "2026-08-03T01:54:16.877119",
     "category": "A",
     "hook_type": "misconception"
+  },
+  "Your parent lives alone and you're three states away. Every unanswered phone call becomes a moment of real anxiety.": {
+    "used_at": "2026-08-08T00:57:06.997065",
+    "category": "C",
+    "hook_type": "pain_point"
   }
 }
