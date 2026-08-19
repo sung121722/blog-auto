@@ -1,9 +1,4 @@
 {
-  "Most people think the Mediterranean diet is complicated to follow. The core of it is simpler than almost any other eating pattern.": {
-    "used_at": "2026-05-20T10:31:56.809267",
-    "category": "D",
-    "hook_type": "misconception"
-  },
   "Most people believe Medicare covers everything once they turn 65. The gaps in coverage are where the expensive surprises happen.": {
     "used_at": "2026-08-10T11:02:44.910082",
     "category": "A",
@@ -85,7 +80,7 @@
     "hook_type": "pain_point"
   },
   "Strength training after 70 gets treated as too risky to attempt. The research consistently says the opposite.": {
-    "used_at": "2026-08-09T00:56:47.667801",
+    "used_at": "2026-08-19T00:40:46.330714",
     "category": "D",
     "hook_type": "misconception"
   },
